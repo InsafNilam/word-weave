@@ -1,28 +1,34 @@
-FROM rust:1.88-slim as builder
+# -------- Build Stage --------
+FROM rust:1.88-alpine as builder
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies for Rust + Protobuf + OpenSSL
+RUN apk add --no-cache \
+    clang \
+    lld \
+    musl-dev \
+    openssl-dev \
+    protobuf-dev \
+    protoc \
+    git \
+    pkgconfig \
+    build-base
 
+# Set working directory
 WORKDIR /app
 
-# Leverage Docker cache
+# Leverage Docker cache for dependencies
 COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && cargo build --release
+RUN rm -rf src
 
-# Copy actual source
+# Copy source and build
 COPY build.rs ./
 COPY proto/ proto/
 COPY src/ src/
-
-# Build final binary
 RUN cargo build --release && strip target/release/server
 
-# Final runtime stage
-FROM debian:12.11-slim as final
+# -------- Runtime Stage --------
+FROM debian:bookworm-slim AS runtime
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
@@ -31,17 +37,20 @@ RUN apt-get update && apt-get install -y \
     netcat \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-RUN mkdir -p /app/data && chown -R appuser:appuser /app
-COPY --from=builder /app/target/release/server /app/server
-RUN chown appuser:appuser /app/server
+# App setup
+WORKDIR /app
+COPY --from=builder /app/target/release/server ./server
+RUN chown -R appuser:appuser /app
 
 USER appuser
-WORKDIR /app
 
+# gRPC port
 EXPOSE 50053
 
-HEALTHCHECK CMD nc -z localhost 50053 || exit 1
+# Healthcheck (optional but recommended)
+HEALTHCHECK --interval=30s --timeout=3s CMD nc -z localhost 50053 || exit 1
 
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["./server"]
