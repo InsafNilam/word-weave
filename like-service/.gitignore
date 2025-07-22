@@ -18,8 +18,8 @@ docker-compose.override.yml
 *.env
 .env.*
 
-# Node modules (if any frontend)
-/node_modules/
+# Data Files
+/data
 
 # OS generated files
 .DS_Store

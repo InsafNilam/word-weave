@@ -3,6 +3,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import userRoutes from "./routes/user.route.js";
 import postRoutes from "./routes/post.route.js";
+import likeRoutes from "./routes/like.route.js";
 import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);
+app.use("/api/likes", likeRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

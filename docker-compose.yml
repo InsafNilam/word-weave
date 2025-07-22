@@ -4,9 +4,10 @@ services:
     image: postgres:17.5-alpine
     container_name: post-db
     environment:
-      POSTGRES_DB: postdb
-      POSTGRES_USER: postuser
-      POSTGRES_PASSWORD: postpass
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: always
     volumes:
       - post_db_data:/var/lib/postgresql/data
     ports:
@@ -14,15 +15,29 @@ services:
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postuser -d postdb"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
+  # SurrealDB for Like Service
   like_db:
     image: surrealdb/surrealdb:v2.3.7
     container_name: like-db
-    command: start --log trace --user root --pass root file:/data
+    env_file:
+      - .env
+    entrypoint:
+      - /surreal
+      - start
+      - --log
+      - trace
+      - --auth
+      - --user
+      - $SURREAL_DB_USER
+      - --pass
+      - $SURREAL_DB_PASSWORD
+      - rocksdb:/data/likes.db
+    restart: always
     volumes:
       - like_db_data:/data
     ports:
@@ -30,10 +45,63 @@ services:
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "$SURREAL_HEALTH_CHECK_URL"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 3
+
+  # MongoDB for User Service
+  user-db:
+    image: mongo
+    container_name: user-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    restart: always
+    volumes:
+      - user_db_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - PORT=${PORT}
+      - POST_SERVICE_ADDR=${POST_SERVICE_ADDR}
+      - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
+      - LIKE_SERVICE_ADDR=${LIKE_SERVICE_ADDR}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service
+      - post-service
+      - like-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+  
+  # User Service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "50051:50051"
+    networks:
+      - microservices-network
+    restart: unless-stopped
 
   # Post Service
   post-service:
@@ -57,34 +125,22 @@ services:
     networks:
       - microservices-network
     restart: unless-stopped
-
-  # API Gateway
-  api-gateway:
+  
+  # Like Service
+  like-service:
     build:
-      context: ./api-gateway
+      context: ./like-service
       dockerfile: Dockerfile
-    container_name: api-gateway
+    container_name: like-service
     environment:
-      - PORT=8080
-      - POST_SERVICE_ADDR=post-service:50052
-      - USER_SERVICE_ADDR=user-service:50051
+      - SURREAL_DB_USER=${SURREAL_DB_USER}
+      - SURREAL_DB_PASSWORD=${SURREAL_DB_PASSWORD}
+      - SURREAL_HEALTH_CHECK_URL=http://like-db:8000/health
     ports:
-      - "8080:8080"
+      - "50053:50053"
     depends_on:
-      - post-service
-      - user-service
-    networks:
-      - microservices-network
-    restart: unless-stopped
-
-  # Assuming your existing user service
-  user-service:
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
-    container_name: user-service
-    ports:
-      - "50051:50051"
+      like-db:
+        condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped

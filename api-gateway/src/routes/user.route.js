@@ -1,5 +1,6 @@
 import express from "express";
 import { userClient } from "../clients/user.client.js";
+import { likeClient } from "../clients/like.client.js";
 import { authorizeByRole } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -62,6 +63,29 @@ router.get("/:id", authorizeByRole(["admin"]), (req, res) => {
   const user_id = req.params.id;
 
   userClient.GetUser({ user_id }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
+router.get("/:id/likes", (req, res) => {
+  const { id } = req.params;
+  const { limit, offset } = req.query;
+
+  likeClient.GetUserLikes({ user_id: id, limit, offset }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
+router.get("/:user/posts/:post", (req, res) => {
+  const { user, post } = req.params;
+
+  postClient.IsPostLiked({ user_id: user, post_id: post }, (err, response) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }

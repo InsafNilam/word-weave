@@ -1,5 +1,6 @@
 import express from "express";
 import { postClient } from "../clients/post.client.js";
+import { likeClient } from "../clients/like.client.js";
 import { authorizeByRole } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -34,6 +35,30 @@ router.post("/", authorizeByRole([]), (req, res) => {
       return res.status(500).json({ error: err.message });
     }
     res.status(201).json(response);
+  });
+});
+
+router.post("/:id/like", authorizeByRole([]), (req, res) => {
+  const { id } = req.params;
+  const { user_id } = req.body;
+
+  likeClient.LikePost({ post_id: id, user_id }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
+router.delete("/:id/unlike", authorizeByRole([]), (req, res) => {
+  const { id } = req.params;
+  const { user_id } = req.body;
+
+  likeClient.UnlikePost({ post_id: id, user_id }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
   });
 });
 
@@ -93,6 +118,42 @@ router.get("/count", authorizeByRole(["admin"]), (req, res) => {
   });
 });
 
+router.get("/likes/count", (req, res) => {
+  let { ids } = req.query;
+
+  // If id is a string, convert to array; if already array, use as is
+  let post_ids = Array.isArray(ids)
+    ? ids
+    : typeof ids === "string"
+    ? [ids]
+    : [];
+
+  if (post_ids.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Missing or invalid 'id' query parameter" });
+  }
+
+  likeClient.GetLikesCountBulk({ post_ids }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
+router.get("/:id/likes", (req, res) => {
+  const { id } = req.params;
+  const { limit, offset } = req.query;
+
+  likeClient.GetPostLikes({ post_id: id, limit, offset }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
 router.get("/slug/:slug", (req, res) => {
   const { slug } = req.params;
 
@@ -119,6 +180,17 @@ router.get("/category/:category", (req, res) => {
   const { category } = req.params;
 
   postClient.GetPostsByCategory({ category }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
+router.get("/:id/likes/count", (req, res) => {
+  const { id } = req.params;
+
+  likeClient.GetLikesCount({ post_id: id }, (err, response) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
