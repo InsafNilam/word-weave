@@ -1,0 +1,16 @@
+[package]
+name = "like-service"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
+
+[dependencies]
+prost = "0.14.1"
+surrealdb = "2.3.7"
+tonic = "0.13.1"
+
+[build-dependencies]
+tonic-build = "0.13.1"

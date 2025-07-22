@@ -1,0 +1,32 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+
+# Cargo package manager files
+Cargo.lock
+
+# IDE/editor files
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Docker artifacts
+docker-compose.override.yml
+*.env
+.env.*
+
+# Node modules (if any frontend)
+/node_modules/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Coverage
+/coverage/
+
+# Misc
+*.tmp

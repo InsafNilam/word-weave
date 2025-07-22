@@ -1,0 +1,36 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go build artifacts
+/bin/
+/build/
+/dist/
+
+# Dependency directories
+/vendor/
+
+# IDE/editor files
+*.swp
+*.swo
+*.idea/
+*.vscode/
+*.DS_Store
+
+# Logs
+*.log
+
+# Coverage reports
+*.coverprofile
+
+# Docker files
+Dockerfile*
+docker-compose*
+
+# Git files
+.git
+.gitignore

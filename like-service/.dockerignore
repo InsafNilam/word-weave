@@ -1,0 +1,23 @@
+# Ignore target directory (Rust build artifacts)
+target/
+
+# Ignore Cargo.lock if building a library
+Cargo.lock
+
+# Ignore Environment files
+.env
+.env.*
+
+# Ignore logs and temp files
+*.log
+*.tmp
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE/editor files
+.idea/
+.vscode/
+*.swp
+*.swo

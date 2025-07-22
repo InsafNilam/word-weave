@@ -1,0 +1,32 @@
+# .NET build outputs
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code settings
+.vscode/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Docker files
+*.tar
+*.log
+docker-compose.override.yml
+docker-compose.*
+Dockerfile.*
+
+# OS generated files
+*.DS_Store
+Thumbs.db
+
+# Others
+*.vs/
+.idea/
+*.db

@@ -1,0 +1,28 @@
+# Go build artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.test
+*.out
+
+# Go modules
+/go.sum
+/go.mod
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# Dependency directories
+/vendor/
+
+# Docker files
+*.log
+docker-compose.override.yml
+.env
+.DS_Store
+
+# OS generated files
+Thumbs.db

@@ -1,0 +1,97 @@
+services:
+  # PostgreSQL Database for Post Service
+  post-db:
+    image: postgres:17.5-alpine
+    container_name: post-db
+    environment:
+      POSTGRES_DB: postdb
+      POSTGRES_USER: postuser
+      POSTGRES_PASSWORD: postpass
+    volumes:
+      - post_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postuser -d postdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  like_db:
+    image: surrealdb/surrealdb:v2.3.7
+    container_name: like-db
+    command: start --log trace --user root --pass root file:/data
+    volumes:
+      - like_db_data:/data
+    ports:
+      - "8000:8000"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Post Service
+  post-service:
+    build:
+      context: ./post-service
+      dockerfile: Dockerfile
+    container_name: post-service
+    environment:
+      - DB_HOST=post-db
+      - DB_PORT=5432
+      - DB_USER=postuser
+      - DB_PASSWORD=postpass
+      - DB_NAME=postdb
+      - GRPC_PORT=50052
+      - USER_SERVICE_ADDR=user-service:50051
+    ports:
+      - "50052:50052"
+    depends_on:
+      post-db:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - PORT=8080
+      - POST_SERVICE_ADDR=post-service:50052
+      - USER_SERVICE_ADDR=user-service:50051
+    ports:
+      - "8080:8080"
+    depends_on:
+      - post-service
+      - user-service
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Assuming your existing user service
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "50051:50051"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+volumes:
+  post_db_data:
+
+networks:
+  microservices-network:
+    driver: bridge

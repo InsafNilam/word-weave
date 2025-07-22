@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package like;
+
+service LikeService {
+  rpc LikePost(LikeRequest) returns (LikeResponse);
+  rpc UnlikePost(LikeRequest) returns (LikeResponse);
+  rpc GetLikedPosts(UserIdRequest) returns (LikedPostsResponse);
+  rpc GetLikedUsers(PostIdRequest) returns (LikedUsersResponse);
+}
+
+message LikeRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+message LikeResponse {
+  bool success = 1;
+}
+
+message UserIdRequest {
+  string user_id = 1;
+}
+
+message PostIdRequest {
+  string post_id = 1;
+}
+
+message LikedPostsResponse {
+  repeated string post_ids = 1;
+}
+
+message LikedUsersResponse {
+  repeated string user_ids = 1;
+}

@@ -1,0 +1,43 @@
+import mongoose from "mongoose";
+const { Schema } = mongoose;
+
+const userSchema = new Schema(
+  {
+    clerkUserId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      minLength: 3,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      match: /^\S+@\S+\.\S+$/,
+    },
+    img: {
+      type: String,
+    },
+    bio: {
+      type: String,
+      maxLength: 500,
+    },
+  },
+  {
+    timestamps: true,
+    // Add indexes for better performance
+    indexes: [{ clerkUserId: 1 }, { email: 1 }, { username: 1 }],
+  }
+);
+
+// Add compound index for pagination queries
+userSchema.index({ createdAt: -1 });
+
+module.exports = mongoose.model("User", userSchema);
