@@ -11,7 +11,7 @@ services:
     volumes:
       - post_db_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5432:5432"
     networks:
       - microservices-network
     healthcheck:
@@ -81,12 +81,16 @@ services:
       - POST_SERVICE_ADDR=${POST_SERVICE_ADDR}
       - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
       - LIKE_SERVICE_ADDR=${LIKE_SERVICE_ADDR}
+      - COMMENT_SERVICE_ADDR=${COMMENT_SERVICE_ADDR}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
     ports:
       - "8080:8080"
     depends_on:
       - user-service
       - post-service
       - like-service
+      - comment-service
     networks:
       - microservices-network
     restart: unless-stopped
@@ -97,6 +101,10 @@ services:
       context: ./user-service
       dockerfile: Dockerfile
     container_name: user-service
+    environment:
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - GRPC_PORT=50051
     ports:
       - "50051:50051"
     networks:
@@ -112,11 +120,11 @@ services:
     environment:
       - DB_HOST=post-db
       - DB_PORT=5432
-      - DB_USER=postuser
-      - DB_PASSWORD=postpass
-      - DB_NAME=postdb
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
       - GRPC_PORT=50052
-      - USER_SERVICE_ADDR=user-service:50051
+      - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
     ports:
       - "50052:50052"
     depends_on:
@@ -136,6 +144,8 @@ services:
       - SURREAL_DB_USER=${SURREAL_DB_USER}
       - SURREAL_DB_PASSWORD=${SURREAL_DB_PASSWORD}
       - SURREAL_HEALTH_CHECK_URL=http://like-db:8000/health
+      - DATABASE_URL=${DATABASE_URL}
+      - GRPC_PORT=50053
     ports:
       - "50053:50053"
     depends_on:
@@ -145,8 +155,36 @@ services:
       - microservices-network
     restart: unless-stopped
 
+  # Comment Service
+  comment-service:
+    build:
+      context: ./comment-service
+      dockerfile: Dockerfile
+    container_name: comment-service
+    environment:
+      - DB_HOST=post-db
+      - DB_PORT=5432
+      - DB_USER=postuser
+      - DB_PASSWORD=postpass
+      - DB_NAME=postdb
+      - GRPC_PORT=50054
+      - USER_SERVICE_ADDR=user-service:50051
+    ports:
+      - "50054:50054"
+    depends_on:
+      post-db:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
 volumes:
   post_db_data:
+    driver: local
+  like_db_data:
+    driver: local
+  user_db_data:
+    driver: local
 
 networks:
   microservices-network:

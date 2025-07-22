@@ -17,7 +17,7 @@ impl Database {
         let client = if database_url.starts_with("rocksdb://") {
             let path = database_url
                 .strip_prefix("rocksdb://")
-                .unwrap_or("./data/likes.db");
+                .unwrap_or("/data/likes.db");
             info!("Using RocksDB at path: {}", path);
             Surreal::new::<RocksDb>(path).await?
         } else {
