@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+option csharp_namespace = "CommentService";
+
+package comment;
+
+// Comment Service
+service CommentService {
+  rpc CreateComment(CreateCommentRequest) returns (CommentResponse);
+  rpc GetComment(GetCommentRequest) returns (CommentResponse);
+  rpc GetCommentsByPost(GetCommentsByPostRequest) returns (GetCommentsResponse);
+  rpc GetCommentsByUser(GetCommentsByUserRequest) returns (GetCommentsResponse);
+  rpc UpdateComment(UpdateCommentRequest) returns (CommentResponse);
+  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+  rpc GetCommentCount(GetCommentCountRequest) returns (GetCommentCountResponse);
+  rpc DeleteComments(DeleteCommentsRequest) returns (DeleteCommentResponse);
+}
+
+// Messages
+message Comment {
+  int32 id = 1;
+  string user_id = 2;
+  int32 post_id = 3;
+  string description = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message CreateCommentRequest {
+  string user_id = 1;
+  int32 post_id = 2;
+  string description = 3;
+}
+
+message GetCommentRequest { int32 id = 1; }
+
+message GetCommentsByPostRequest {
+  int32 post_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetCommentsByUserRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message UpdateCommentRequest {
+  int32 id = 1;
+  string user_id = 2;
+  string description = 3;
+}
+
+message DeleteCommentRequest {
+  int32 id = 1;
+  string user_id = 2;
+  int32 post_id = 3;
+}
+
+message DeleteCommentsRequest { repeated int32 ids = 1; }
+
+message GetCommentCountRequest { int32 post_id = 1; }
+
+message CommentResponse {
+  bool success = 1;
+  string message = 2;
+  Comment comment = 3;
+}
+
+message GetCommentsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated Comment comments = 3;
+  int32 total_count = 4;
+  int32 page = 5;
+  int32 page_size = 6;
+}
+
+message DeleteCommentResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message GetCommentCountResponse {
+  bool success = 1;
+  string message = 2;
+  int32 count = 3;
+}
