@@ -14,6 +14,7 @@ service LikesService {
   rpc GetLikesCountBulk(GetLikesCountBulkRequest)
       returns (GetLikesCountBulkResponse);
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc UnlikePosts(UnlikePostsRequest) returns (UnlikePostResponse);
 }
 
 // Like Post
@@ -37,6 +38,12 @@ message UnlikePostRequest {
 message UnlikePostResponse {
   bool success = 1;
   string message = 2;
+}
+
+// Unlike Posts
+message UnlikePostsRequest {
+  repeated string user_ids = 1;
+  repeated string post_ids = 2;
 }
 
 // Get User Likes

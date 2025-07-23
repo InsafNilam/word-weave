@@ -281,6 +281,57 @@ impl LikesService for LikesServiceImpl {
         }
     }
 
+    async fn unlike_posts(
+        &self,
+        request: Request<UnlikePostsRequest>,
+    ) -> Result<Response<UnlikePostResponse>, Status> {
+        let req = request.into_inner();
+        debug!(
+            "Unlike posts request for {} users and {} posts",
+            req.user_ids.len(),
+            req.post_ids.len()
+        );
+
+        if req.user_ids.is_empty() && req.post_ids.is_empty() {
+            return Err(Status::invalid_argument(
+                "User IDs and Post IDs cannot be empty",
+            ));
+        }
+
+        // Validate user IDs
+        for user_id in &req.user_ids {
+            if user_id.trim().is_empty() {
+                return Err(Status::invalid_argument("User ID cannot be empty"));
+            }
+        }
+
+        // Validate post IDs
+        for post_id in &req.post_ids {
+            if post_id.trim().is_empty() {
+                return Err(Status::invalid_argument("Post ID cannot be empty"));
+            }
+        }
+
+        match self
+            .repository
+            .unlike_posts(&req.user_ids, &req.post_ids)
+            .await
+        {
+            Ok(deleted) => Ok(Response::new(UnlikePostResponse {
+                success: deleted,
+                message: if deleted {
+                    "Posts unliked successfully".to_string()
+                } else {
+                    "No likes found to unlike".to_string()
+                },
+            })),
+            Err(e) => {
+                error!("Failed to unlike posts: {}", e);
+                Err(e.into())
+            }
+        }
+    }
+
     async fn health_check(
         &self,
         _request: Request<HealthCheckRequest>,

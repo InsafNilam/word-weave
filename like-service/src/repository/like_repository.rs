@@ -264,6 +264,50 @@ impl LikesRepository {
         Ok(result_map)
     }
 
+    pub async fn unlike_posts(&self, user_ids: &[String], post_ids: &[String]) -> Result<bool> {
+        debug!(
+            "Unliking posts for {} users on {} posts",
+            user_ids.len(),
+            post_ids.len()
+        );
+
+        // Reject if both lists are empty
+        if user_ids.is_empty() && post_ids.is_empty() {
+            return Err(LikesError::InvalidInput(
+                "At least one of user_ids or post_ids must be provided".to_string(),
+            ));
+        }
+
+        // Build conditional parts of the query
+        let mut query = String::from("DELETE likes WHERE");
+        let mut conditions = Vec::new();
+
+        if !user_ids.is_empty() {
+            conditions.push("user_id IN $user_ids");
+        }
+        if !post_ids.is_empty() {
+            conditions.push("post_id IN $post_ids");
+        }
+
+        // Join conditions with AND
+        query.push_str(&format!(" {}", conditions.join(" AND ")));
+        query.push(';');
+
+        let mut query_builder = self.db.client.query(query);
+
+        if !user_ids.is_empty() {
+            query_builder = query_builder.bind(("user_ids", user_ids.to_vec()));
+        }
+        if !post_ids.is_empty() {
+            query_builder = query_builder.bind(("post_ids", post_ids.to_vec()));
+        }
+
+        let mut result = query_builder.await.map_err(LikesError::Database)?;
+
+        let deleted: Vec<Like> = result.take(0)?;
+        Ok(!deleted.is_empty())
+    }
+
     pub async fn health_check(&self) -> Result<bool> {
         self.db.health_check().await.map_err(LikesError::Database)
     }
