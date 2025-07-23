@@ -5,3 +5,5 @@ offed (in) vs code
 
 $ docker build -t node-app .
 $ docker run -p 3001:3001 -e PORT=3001 -e NODE_ENVIRONMENT=development node-app
+
+https://last9.io/blog/docker-compose-health-checks/

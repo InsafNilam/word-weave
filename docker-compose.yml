@@ -70,7 +70,56 @@ services:
       timeout: 10s
       retries: 3
 
-# API Gateway
+  comment-db:
+    image: mysql:8.4.6
+    container_name: comment-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+     - "3306:3306"
+    volumes:
+      - comment_db_data:/var/lib/mysql
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "comment-db", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+
+    redis:
+      image: redis:7.4.5-alpine
+      container_name: redis
+      restart: always
+      ports:
+        - "6379:6379"
+      networks:
+        - microservices-network
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 10s
+        timeout: 5s
+        retries: 3
+  
+    rabbitmq:
+      image: rabbitmq:4-management
+      container_name: rabbitmq
+      restart: always
+      ports:
+        - "5672:5672"
+        - "15672:15672"
+      networks:
+        - microservices-network
+      healthcheck:
+        test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+
+  # API Gateway
   api-gateway:
     build:
       context: ./api-gateway
@@ -184,6 +233,8 @@ volumes:
   like_db_data:
     driver: local
   user_db_data:
+    driver: local
+  comment_db_data:
     driver: local
 
 networks:

@@ -1,7 +1,7 @@
 using Grpc.Core;
-using comment_service;
+using CommentService;
 
-namespace comment_service.Services;
+namespace CommentService.Services;
 
 public class GreeterService : Greeter.GreeterBase
 {

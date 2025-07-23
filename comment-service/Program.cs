@@ -1,4 +1,4 @@
-using comment_service.Services;
+using CommentService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
