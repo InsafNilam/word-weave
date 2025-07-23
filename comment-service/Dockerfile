@@ -19,4 +19,4 @@ COPY --from=build /app ./
 EXPOSE 5000
 
 # Start the ASP.NET Core gRPC service
-ENTRYPOINT ["dotnet", "YourProjectName.dll"]
+ENTRYPOINT ["dotnet", "CommentService.dll"]
