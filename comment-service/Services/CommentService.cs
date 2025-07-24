@@ -399,6 +399,36 @@ namespace CommentService.GrpcServices
             }
         }
 
+        public override async Task<DeleteCommentResponse> DeleteComments(DeleteCommentsRequest request, ServerCallContext context)
+        {
+            try
+            {
+                _logger.LogInformation("Deleting multiple comments for user {UserId}", request.UserId);
+
+                if (request.Ids == null || request.Ids.Count == 0)
+                {
+                    return new DeleteCommentResponse
+                    {
+                        Success = false,
+                        Message = "At least one comment ID is required"
+                    };
+                }
+
+                var deletedCount = await _commentRepository.DeleteMultipleAsync(request.Ids);
+
+                return new DeleteCommentResponse
+                {
+                    Success = true,
+                    Message = $"{deletedCount} comments deleted successfully"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting multiple comments for user {UserId}", request.UserId);
+                throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+            }
+        }
+
         private static Grpc.Comment MapToGrpcComment(Models.Comment comment)
         {
             return new Grpc.Comment

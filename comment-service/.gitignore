@@ -15,6 +15,9 @@ obj/
 packages/
 .nuget/
 
+# Migration
+Migrations/
+
 # Docker files
 *.tar
 *.log

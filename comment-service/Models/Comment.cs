@@ -67,10 +67,12 @@ namespace CommentService.Models
 
                 entity.Property(e => e.CreatedAt)
                     .IsRequired()
+                    .HasColumnType("timestamp")
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 entity.Property(e => e.UpdatedAt)
                     .IsRequired()
+                    .HasColumnType("timestamp")
                     .HasDefaultValueSql("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
 
                 // Indexes for better performance

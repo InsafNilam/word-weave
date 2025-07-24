@@ -8,3 +8,8 @@ $ docker run -p 3001:3001 -e PORT=3001 -e NODE_ENVIRONMENT=development node-app
 
 https://last9.io/blog/docker-compose-health-checks/
 https://dbeaver.io/
+
+mysqld --skip-grant-tables --init-file=C:\path\to\your\reset_password.txt
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'YourNewPassword';
+
+dotnet tool install --global dotnet-ef

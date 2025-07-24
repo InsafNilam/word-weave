@@ -31,6 +31,8 @@ builder.Services.AddGrpcReflection();
 // Database configuration
 builder.Services.AddDbContext<CommentDbContext>(options =>
 {
+    options.UseLoggerFactory(LoggerFactory.Create(builder => builder.AddConsole()));
+
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
     {
