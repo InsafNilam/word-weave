@@ -32,7 +32,6 @@ const userSchema = new Schema(
   },
   {
     timestamps: true,
-    // Add indexes for better performance
     indexes: [{ clerkUserId: 1 }, { email: 1 }, { username: 1 }],
   }
 );
@@ -40,4 +39,4 @@ const userSchema = new Schema(
 // Add compound index for pagination queries
 userSchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema);

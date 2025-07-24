@@ -16,9 +16,12 @@
     "@clerk/backend": "^2.5.0",
     "@grpc/grpc-js": "^1.13.4",
     "@grpc/proto-loader": "^0.7.15",
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
-    "mongoose": "^8.16.4"
+    "express": "^5.1.0",
+    "mongoose": "^8.16.4",
+    "svix": "^1.69.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
