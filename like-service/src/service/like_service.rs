@@ -3,7 +3,6 @@ use crate::{
     proto::{likes_service_server::LikesService, *},
     repository::LikesRepository,
 };
-use std::collections::HashMap;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, info};
 
@@ -244,38 +243,6 @@ impl LikesService for LikesServiceImpl {
             Ok(count) => Ok(Response::new(GetLikesCountResponse { count })),
             Err(e) => {
                 error!("Failed to get likes count: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    async fn get_likes_count_bulk(
-        &self,
-        request: Request<GetLikesCountBulkRequest>,
-    ) -> Result<Response<GetLikesCountBulkResponse>, Status> {
-        let req = request.into_inner();
-        debug!(
-            "Get bulk likes count request for {} posts",
-            req.post_ids.len()
-        );
-
-        if req.post_ids.is_empty() {
-            return Ok(Response::new(GetLikesCountBulkResponse {
-                counts: HashMap::new(),
-            }));
-        }
-
-        // Validate post IDs
-        for post_id in &req.post_ids {
-            if post_id.trim().is_empty() {
-                return Err(Status::invalid_argument("Post ID cannot be empty"));
-            }
-        }
-
-        match self.repository.get_likes_count_bulk(&req.post_ids).await {
-            Ok(counts) => Ok(Response::new(GetLikesCountBulkResponse { counts })),
-            Err(e) => {
-                error!("Failed to get bulk likes count: {}", e);
                 Err(e.into())
             }
         }

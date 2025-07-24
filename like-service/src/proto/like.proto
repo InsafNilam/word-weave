@@ -11,8 +11,6 @@ service LikesService {
   rpc GetPostLikes(GetPostLikesRequest) returns (GetPostLikesResponse);
   rpc IsPostLiked(IsPostLikedRequest) returns (IsPostLikedResponse);
   rpc GetLikesCount(GetLikesCountRequest) returns (GetLikesCountResponse);
-  rpc GetLikesCountBulk(GetLikesCountBulkRequest)
-      returns (GetLikesCountBulkResponse);
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
   rpc UnlikePosts(UnlikePostsRequest) returns (UnlikePostResponse);
 }
@@ -95,11 +93,6 @@ message IsPostLikedResponse {
 message GetLikesCountRequest { string post_id = 1; }
 
 message GetLikesCountResponse { int64 count = 1; }
-
-// Bulk Likes Count
-message GetLikesCountBulkRequest { repeated string post_ids = 1; }
-
-message GetLikesCountBulkResponse { map<string, int64> counts = 1; }
 
 // Health Check
 message HealthCheckRequest {}

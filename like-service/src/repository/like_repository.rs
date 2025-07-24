@@ -4,7 +4,6 @@ use crate::{
     models::{Like, PaginatedResult, PaginationParams},
 };
 use chrono::{DateTime, Utc};
-use std::collections::HashMap;
 use tracing::{debug, error};
 
 #[derive(Debug, Clone)]
@@ -217,51 +216,6 @@ impl LikesRepository {
 
         let count_data: Option<serde_json::Value> = result.take(0)?;
         Ok(count_data.and_then(|v| v["count"].as_i64()).unwrap_or(0))
-    }
-
-    pub async fn get_likes_count_bulk(&self, post_ids: &[String]) -> Result<HashMap<String, i64>> {
-        debug!("Getting bulk likes count for {} posts", post_ids.len());
-
-        if post_ids.is_empty() {
-            return Ok(HashMap::new());
-        }
-
-        let query = r#"
-            SELECT post_id, count() AS count 
-            FROM likes 
-            WHERE post_id IN $post_ids 
-            GROUP BY post_id;
-        "#;
-
-        let post_ids_owned: Vec<String> = post_ids.to_vec();
-
-        let mut result = self
-            .db
-            .client
-            .query(query)
-            .bind(("post_ids", post_ids_owned))
-            .await
-            .map_err(LikesError::Database)?;
-
-        let counts: Vec<serde_json::Value> = result.take(0)?;
-
-        let mut result_map = HashMap::new();
-
-        // Initialize all post IDs with 0 count
-        for post_id in post_ids {
-            result_map.insert(post_id.clone(), 0i64);
-        }
-
-        // Update with actual counts
-        for count_data in counts {
-            if let (Some(post_id), Some(count)) =
-                (count_data["post_id"].as_str(), count_data["count"].as_i64())
-            {
-                result_map.insert(post_id.to_string(), count);
-            }
-        }
-
-        Ok(result_map)
     }
 
     pub async fn unlike_posts(&self, user_ids: &[String], post_ids: &[String]) -> Result<bool> {

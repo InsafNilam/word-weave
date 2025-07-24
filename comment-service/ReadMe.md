@@ -14,3 +14,5 @@ dotnet ef migrations remove
 <!-- Some other location -->
 
 dotnet ef migrations add InitialCreate --project CommentService --startup-project CommentService
+
+git rm -r --cached obj/
