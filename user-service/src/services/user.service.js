@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import User from "../models/user.model.js";
 import { createClerkClient } from "@clerk/backend";
 import {
   getGrpcErrorCode,

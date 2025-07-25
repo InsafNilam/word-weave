@@ -1,62 +1,157 @@
-import express from "express";
-import cors from "cors";
 import dotenv from "dotenv";
-import webhookRoutes from "./webhook/index.js";
-import mongoose from "mongoose";
-
-import grpc from "@grpc/grpc-js";
-import { createGrpcServer } from "./server.js";
-
 dotenv.config();
 
-const app = express();
+import mongoose from "mongoose";
+import {
+  createWebhookServer,
+  startWebhookServer,
+  closeWebhookServer,
+  getServerInfo,
+} from "./servers/webhook-server.js";
+import { startGrpcServer } from "./servers/grpc-server.js";
 
-app.use(cors());
-app.use("/webhook", webhookRoutes); // Exposed as /webhook/clerk
+async function startApplication() {
+  let webhookServer = null;
+  let grpcServer = null;
 
-const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 8001;
+  try {
+    console.log("🚀 Starting application...");
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
+    // 1. Connect to MongoDB first
+    console.log("📦 Connecting to MongoDB...");
+    await mongoose.connect(process.env.MONGO_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false,
+    });
     console.log("✅ Connected to MongoDB");
 
-    app.listen(WEBHOOK_PORT, () => {
-      console.log(
-        `🚀 Webhook server listening at http://localhost:${WEBHOOK_PORT}`
-      );
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-  });
+    // 2. Create and start webhook server
+    console.log("🌐 Starting webhook server...");
+    const webhookApp = createWebhookServer();
+    webhookServer = await startWebhookServer(webhookApp);
 
-const PORT = process.env.GRPC_PORT || "50051";
-const ADDRESS = `0.0.0.0:${PORT}`;
-const server = createGrpcServer();
+    // Log webhook server info
+    const webhookInfo = getServerInfo(webhookServer);
+    console.log(`📡 Webhook server info:`, webhookInfo);
 
-server.bindAsync(
-  ADDRESS,
-  grpc.ServerCredentials.createInsecure(),
-  (err, port) => {
-    if (err) {
-      console.error("❌ Failed to start gRPC server:", err);
-      process.exit(1);
-    }
+    // 3. Start gRPC server
+    console.log("⚡ Starting gRPC server...");
+    grpcServer = await startGrpcServer();
 
-    console.log(`🚀 gRPC server running at ${ADDRESS}`);
-    // server.start();
+    console.log("🎉 All services started successfully!");
+    console.log("📊 Application is ready to handle requests");
+  } catch (error) {
+    console.error("❌ Failed to start application:", error);
+
+    // Cleanup on startup failure
+    await cleanup(webhookServer, grpcServer);
+    process.exit(1);
   }
-);
 
-process.on("SIGINT", () => {
-  console.log("\n🛑 Received SIGINT. Shutting down gRPC server...");
-  server.tryShutdown((err) => {
-    if (err) {
-      console.error("❌ Error during shutdown:", err);
+  // Setup graceful shutdown handlers
+  setupGracefulShutdown(webhookServer, grpcServer);
+}
+
+/**
+ * Setup graceful shutdown handlers for different signals
+ */
+function setupGracefulShutdown(webhookServer, grpcServer) {
+  const shutdown = async (signal) => {
+    console.log(`\n🛑 Received ${signal}. Initiating graceful shutdown...`);
+
+    try {
+      await cleanup(webhookServer, grpcServer);
+      console.log("✅ Graceful shutdown completed");
+      process.exit(0);
+    } catch (error) {
+      console.error("❌ Error during shutdown:", error);
       process.exit(1);
     }
-    console.log("✅ gRPC server stopped gracefully.");
-    process.exit(0);
+  };
+
+  // Handle different shutdown signals
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGUSR2", () => shutdown("SIGUSR2")); // For nodemon
+
+  // Handle uncaught exceptions
+  process.on("uncaughtException", (error) => {
+    console.error("❌ Uncaught Exception:", error);
+    shutdown("uncaughtException");
   });
+
+  // Handle unhandled promise rejections
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+    shutdown("unhandledRejection");
+  });
+}
+
+/**
+ * Cleanup function to properly close all connections
+ */
+async function cleanup(webhookServer, grpcServer) {
+  const cleanupTasks = [];
+
+  // Close webhook server
+  if (webhookServer) {
+    console.log("🔌 Closing webhook server...");
+    cleanupTasks.push(
+      closeWebhookServer(webhookServer, 5000).catch((err) => {
+        console.error("❌ Error closing webhook server:", err);
+      })
+    );
+  }
+
+  // Close gRPC server
+  if (grpcServer) {
+    console.log("⚡ Closing gRPC server...");
+    cleanupTasks.push(
+      new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("gRPC server shutdown timeout"));
+        }, 5000);
+
+        grpcServer.tryShutdown((err) => {
+          clearTimeout(timeout);
+          if (err) {
+            console.error("❌ Error closing gRPC server:", err);
+            reject(err);
+          } else {
+            console.log("✅ gRPC server closed successfully");
+            resolve();
+          }
+        });
+      }).catch((err) => {
+        console.error("❌ gRPC server shutdown error:", err);
+        // Force shutdown if graceful shutdown fails
+        grpcServer.forceShutdown();
+      })
+    );
+  }
+
+  // Close MongoDB connection
+  if (mongoose.connection.readyState === 1) {
+    console.log("📦 Closing MongoDB connection...");
+    cleanupTasks.push(
+      mongoose.connection.close().catch((err) => {
+        console.error("❌ Error closing MongoDB connection:", err);
+      })
+    );
+  }
+
+  // Wait for all cleanup tasks to complete
+  try {
+    await Promise.allSettled(cleanupTasks);
+    console.log("🧹 Cleanup completed");
+  } catch (error) {
+    console.error("❌ Error during cleanup:", error);
+  }
+}
+
+startApplication().catch((error) => {
+  console.error("❌ Application startup failed:", error);
+  process.exit(1);
 });

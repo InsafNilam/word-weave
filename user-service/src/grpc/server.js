@@ -2,10 +2,10 @@ import path from "path";
 import grpc from "@grpc/grpc-js";
 import { fileURLToPath } from "url";
 import protoLoader from "@grpc/proto-loader";
-import { userService } from "./services/user.service.js";
+import { userService } from "../services/user.service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PROTO_PATH = path.join(__dirname, "proto", "user.proto");
+const PROTO_PATH = path.join(__dirname, "..", "proto", "user.proto");
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   keepCase: true,
