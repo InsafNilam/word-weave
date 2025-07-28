@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package event;
+
+service EventService {
+  rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);
+  rpc GetEventsByAggregate(GetEventsByAggregateRequest)
+      returns (GetEventsResponse);
+  rpc SubscribeToEvents(SubscribeToEventsRequest)
+      returns (SubscribeToEventsResponse);
+}
+
+message Event {
+  string id = 1;
+  string aggregate_id = 2;
+  string aggregate_type = 3;
+  string event_type = 4;
+  string event_data = 5;
+  string metadata = 6;
+  int64 version = 7;
+  int64 timestamp = 8;
+  string correlation_id = 9;
+  string causation_id = 10;
+}
+
+message PublishEventRequest {
+  string aggregate_id = 1;
+  string aggregate_type = 2;
+  string event_type = 3;
+  string event_data = 4;
+  string metadata = 5;
+  string correlation_id = 6;
+  string causation_id = 7;
+}
+
+message PublishEventResponse {
+  string event_id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message GetEventsRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+  string aggregate_type = 3;
+  string event_type = 4;
+}
+
+message GetEventsByAggregateRequest {
+  string aggregate_id = 1;
+  string aggregate_type = 2;
+  int64 from_version = 3;
+}
+
+message GetEventsResponse {
+  repeated Event events = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message SubscribeToEventsRequest {
+  string consumer_group = 1;
+  repeated string event_types = 2;
+  string callback_url = 3;
+}
+
+message SubscribeToEventsResponse {
+  string subscription_id = 1;
+  bool success = 2;
+  string message = 3;
+}

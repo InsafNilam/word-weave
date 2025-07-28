@@ -1,0 +1,46 @@
+# Ignore git-related files
+.git/
+.gitignore
+
+# Ignore bundler configuration
+.bundle/
+
+# Ignore environment files (except templates if needed)
+.env*
+!.env*.erb # Example: if you have .env.production.erb that you want to keep
+
+# Ignore sensitive key files
+config/master.key
+config/credentials/*.key
+
+# Ignore logs and temporary files
+log/*
+tmp/*
+!log/.keep # Keep .keep files if they exist to preserve directory structure
+!tmp/.keep
+
+# Ignore PID files
+tmp/pids/*
+!tmp/pids/.keep
+
+# Ignore storage (uploaded files, SQLite databases)
+storage/*
+!storage/.keep
+tmp/storage/*
+!tmp/storage/.keep
+
+# Ignore assets and build artifacts
+node_modules/
+app/assets/builds/*
+!app/assets/builds/.keep
+public/assets
+
+# Ignore CI service files
+.github/
+
+# Ignore development container files
+.devcontainer/
+
+# Ignore Docker-related files
+.dockerignore
+Dockerfile*

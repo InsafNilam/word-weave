@@ -1,0 +1,4 @@
+require_relative '../lib/main'
+
+EventServiceBootstrap.initialize!
+EventServiceBootstrap.start_server(port: ENV['GRPC_PORT'] || '50051')

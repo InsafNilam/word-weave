@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+# bin/setup
+
+require_relative '../db/setup'
+require_relative '../lib/configuration'
+
+begin
+  # Initialize configuration if needed (e.g., load ENV)
+  config = EventService.configuration
+
+  # Create a new DatabaseSetup instance with config
+  setup = DatabaseSetup.new(config)
+
+  # Run the setup process
+  setup.run
+
+  puts "✅ Database setup finished successfully."
+rescue StandardError => e
+  puts "❌ Database setup failed: #{e.message}"
+  puts e.backtrace.join("\n") if ENV['DEBUG'] == 'true'
+  exit 1
+end
