@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Editor backup files
+*~
+*.bak
+*.swp
+*.swo
+
+# Logs and databases
+*.log
+*.sqlite3
+db.sqlite3
+
+# Environment variables
+.env
+.flaskenv
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Distribution / packaging
+.DS_Store
+dist/
+build/
+*.egg-info/

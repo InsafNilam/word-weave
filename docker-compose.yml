@@ -229,6 +229,86 @@ services:
     networks:
       - microservices-network
     restart: unless-stopped
+  
+  event_service:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_service
+      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      GRPC_PORT: 50055
+    ports:
+      - "50055:50055"
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    command: bin/server
+
+  event_consumer:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_service
+      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - event_service
+    command: bin/consumer
+
+  dead_letter_handler:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_service
+      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - event_service
+    command: bin/dead_letter_handler
+
+  media-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: media-service
+    ports:
+      - "50051:50051"
+    environment:
+      # ImageKit Configuration
+      - IK_PRIVATE_KEY=${IMAGEKIT_PRIVATE_KEY}
+      - IK_PUBLIC_KEY=${IMAGEKIT_PUBLIC_KEY}
+      - IK_URL_ENDPOINT=${IMAGEKIT_URL_ENDPOINT}
+      
+      # gRPC Configuration
+      - GRPC_PORT=50051
+      - GRPC_HOST=0.0.0.0
+      - MAX_WORKERS=10
+      
+      # Application Configuration
+      - LOG_LEVEL=INFO
+      - LOG_FORMAT=json
+      - ENVIRONMENT=production
+      - APP_NAME=media-service
+      
+      # Limits
+      - MAX_FILE_SIZE_MB=100
+      - MAX_FILES_PER_BATCH_DELETE=100
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import grpc; channel = grpc.insecure_channel('localhost:50051'); channel.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - microservices-network
 
 volumes:
   post_db_data:
