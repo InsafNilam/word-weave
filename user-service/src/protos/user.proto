@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  rpc ListUsers (ListUsersRequest) returns (ListUsersResponse);
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+  rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+  rpc GetUserCount (UserFilterRequest) returns (UserCountResponse);
+  rpc UpdateUserRole (UpdateUserRoleRequest) returns (UpdateUserRoleResponse);
+  rpc GetOAuthAccessToken (OAuthTokenRequest) returns (OAuthTokenResponse);
+}
+
+// --- Shared types ---
+
+message User {
+  string id = 1;
+  string email = 2;
+  string username = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string role = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message OAuthToken {
+  string external_account_id = 1;
+  string provider = 2;
+  string token = 3;
+  string label = 4;
+  repeated string scopes = 5;
+  string token_secret = 6;
+  int64 expires_at = 7;
+  map<string, string> public_metadata = 8;
+}
+
+message UserFilterRequest {
+  repeated string email_address = 1;
+  repeated string username = 2;
+  repeated string user_id = 3;
+}
+
+// --- ListUsers ---
+
+message ListUsersRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+  repeated string email_address = 3;
+  repeated string username = 4;
+  repeated string user_id = 5;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total_count = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool has_more = 5;
+  string message = 6;
+}
+
+// --- GetUser ---
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// --- CreateUser ---
+
+message CreateUserRequest {
+  string email = 1;
+  string password = 2;
+  string username = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string role = 6;
+}
+
+message CreateUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// --- UpdateUser ---
+
+message UpdateUserRequest {
+  string user_id = 1;
+  string username = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string role = 5;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// --- DeleteUser ---
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message DeleteUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// --- GetUserCount ---
+
+message UserCountResponse {
+  int32 count = 1;
+  string message = 2;
+}
+
+// --- UpdateUserRole ---
+
+message UpdateUserRoleRequest {
+  string user_id = 1;
+  string role = 2;
+}
+
+message UpdateUserRoleResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// --- GetOAuthAccessToken ---
+
+message OAuthTokenRequest {
+  string user_id = 1;
+  string provider = 2;
+}
+
+message OAuthTokenResponse {
+  repeated OAuthToken tokens = 1;
+  string message = 2;
+}

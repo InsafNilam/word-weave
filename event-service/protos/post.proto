@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package post;
+
+option go_package = "proto/postpb";
+
+import "google/protobuf/timestamp.proto";
+
+service PostService {
+  rpc CreatePost(CreatePostRequest) returns (PostResponse);
+  rpc GetPost(GetPostRequest) returns (PostResponse);
+  rpc GetPostBySlug(GetPostBySlugRequest) returns (PostResponse);
+  rpc UpdatePost(UpdatePostRequest) returns (PostResponse);
+  rpc DeletePost(DeletePostRequest) returns (DeletePostResponse);
+  rpc ListPosts(ListPostsRequest) returns (ListPostsResponse);
+  rpc IncrementVisit(IncrementVisitRequest) returns (PostResponse);
+  rpc GetFeaturedPosts(GetFeaturedPostsRequest) returns (ListPostsResponse);
+  rpc GetPostsByCategory(GetPostsByCategoryRequest) returns (ListPostsResponse);
+  rpc GetPostsByUser(GetPostsByUserRequest) returns (ListPostsResponse);
+  rpc SearchPosts(SearchPostsRequest) returns (ListPostsResponse);
+}
+
+message Post {
+  uint32 id = 1;
+  string user_id = 2;
+  string img = 3;
+  string title = 4;
+  string slug = 5;
+  string desc = 6;
+  string category = 7;
+  string content = 8;
+  bool is_featured = 9;
+  uint32 visit = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message CreatePostRequest {
+  string user_id = 1;
+  string img = 2;
+  string title = 3;
+  string slug = 4;
+  string desc = 5;
+  string category = 6;
+  string content = 7;
+  bool is_featured = 8;
+}
+
+message PostResponse {
+  Post post = 1;
+  string message = 2;
+  bool success = 3;
+}
+
+message GetPostRequest {
+  uint32 id = 1;
+}
+
+message GetPostBySlugRequest {
+  string slug = 1;
+}
+
+message UpdatePostRequest {
+  uint32 id = 1;
+  string user_id = 2;
+  string img = 3;
+  string title = 4;
+  string slug = 5;
+  string desc = 6;
+  string category = 7;
+  string content = 8;
+  bool is_featured = 9;
+}
+
+message DeletePostRequest {
+  uint32 id = 1;
+  string user_id = 2;
+}
+
+message DeletePostResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message ListPostsRequest {
+  uint32 page = 1;
+  uint32 limit = 2;
+  string category = 3;
+  string user_id = 4;
+}
+
+message ListPostsResponse {
+  repeated Post posts = 1;
+  uint32 total = 2;
+  uint32 page = 3;
+  uint32 limit = 4;
+  bool success = 5;
+}
+
+message IncrementVisitRequest {
+  uint32 id = 1;
+}
+
+message GetFeaturedPostsRequest {
+  uint32 limit = 1;
+}
+
+message GetPostsByCategoryRequest {
+  string category = 1;
+  uint32 page = 2;
+  uint32 limit = 3;
+}
+
+message GetPostsByUserRequest {
+  string user_id = 1;
+  uint32 page = 2;
+  uint32 limit = 3;
+}
+
+message SearchPostsRequest {
+  string query = 1;
+  uint32 page = 2;
+  uint32 limit = 3;
+}

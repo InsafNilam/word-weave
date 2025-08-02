@@ -1,5 +1,5 @@
 require 'grpc'
-require_relative 'pb/event_services_pb'
+require_relative 'eventpb/event_services_pb'
 
 module EventService
   class GrpcServer < ::Event::EventService::Service

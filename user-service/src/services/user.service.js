@@ -2,18 +2,44 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import User from "../models/user.model.js";
+import EventServiceClient from "../clients/event.client.js";
 import { createClerkClient } from "@clerk/backend";
 import {
   getGrpcErrorCode,
   normalizeToArray,
   transformUser,
+  generateCorrelationId,
+  generateRequestId,
 } from "../utils/helper.js";
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
 });
 
+const eventClient = new EventServiceClient();
+
 export const userService = {
+  async publishErrorEvent(eventType, error, requestData) {
+    try {
+      await this.eventClient.publishEvent({
+        aggregateId: "user-service",
+        aggregateType: "UserService",
+        eventType,
+        eventData: {
+          error: error.message,
+          requestData,
+          timestamp: new Date().toISOString(),
+        },
+        metadata: {
+          service: "user-service",
+          version: "1.0.0",
+        },
+      });
+    } catch (eventError) {
+      console.warn(`Failed to publish ${eventType} event:`, eventError.message);
+    }
+  },
+
   async ListUsers(call, callback) {
     try {
       // Extract and validate request parameters
@@ -147,6 +173,25 @@ export const userService = {
         publicMetadata: role ? { role } : {},
       });
 
+      // Publish Event
+      await this.eventClient.publishEvent({
+        aggregateId: newUser.id,
+        aggregateType: "User",
+        eventType: "UserCreated",
+        eventData: {
+          userId: newUser.id,
+          email: newUser.emailAddresses[0]?.emailAddress,
+          username: newUser.username,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          createdAt: newUser.createdAt,
+        },
+        metadata: {
+          service: "user-service",
+          version: "1.0.0",
+        },
+      });
+
       callback(null, {
         user: transformUser(newUser),
         message: "User created successfully",
@@ -161,6 +206,7 @@ export const userService = {
       const grpcError = new Error(`Failed to create user: ${error.message}`);
       grpcError.code = getGrpcErrorCode(error);
 
+      await this.publishErrorEvent("UserCreationFailed", error, call.request);
       callback(grpcError);
     }
   },
@@ -187,6 +233,25 @@ export const userService = {
         publicMetadata: role ? { role } : {},
       });
 
+      // Publish Event
+      await eventClient.publishEvent({
+        aggregateId: updatedUser.id,
+        aggregateType: "User",
+        eventType: "UserUpdated",
+        eventData: {
+          userId: updatedUser.id,
+          email: updatedUser.emailAddresses[0]?.emailAddress,
+          username: updatedUser.username,
+          firstName: updatedUser.firstName,
+          lastName: updatedUser.lastName,
+          updatedAt: updatedUser.updatedAt,
+        },
+        metadata: {
+          service: "user-service",
+          version: "1.0.0",
+        },
+      });
+
       callback(null, {
         user: transformUser(updatedUser),
         message: "User updated successfully",
@@ -201,6 +266,7 @@ export const userService = {
       const grpcError = new Error(`Failed to update user: ${error.message}`);
       grpcError.code = getGrpcErrorCode(error);
 
+      await this.publishErrorEvent("UserUpdateFailed", error, call.request);
       callback(grpcError);
     }
   },
@@ -215,6 +281,25 @@ export const userService = {
 
       const deletedUser = await clerkClient.users.deleteUser(user_id);
 
+      // Publish Event
+      await eventClient.publishEvent({
+        aggregateId: deletedUser.id,
+        aggregateType: "User",
+        eventType: "UserDeleted",
+        eventData: {
+          userId: deletedUser.id,
+          email: deletedUser.emailAddresses[0]?.emailAddress,
+          username: deletedUser.username,
+          firstName: deletedUser.firstName,
+          lastName: deletedUser.lastName,
+          deletedAt: deletedUser.deletedAt,
+        },
+        metadata: {
+          service: "user-service",
+          version: "1.0.0",
+        },
+      });
+
       callback(null, {
         user: transformUser(deletedUser),
         message: "User deleted successfully",
@@ -228,6 +313,7 @@ export const userService = {
       const grpcError = new Error(`Failed to delete user: ${error.message}`);
       grpcError.code = getGrpcErrorCode(error);
 
+      await this.publishErrorEvent("UserDeletionFailed", error, call.request);
       callback(grpcError);
     }
   },
@@ -286,6 +372,23 @@ export const userService = {
         publicMetadata: { role },
       });
 
+      // Publish Event
+      await eventClient.publishEvent({
+        aggregateId: updatedUser.id,
+        aggregateType: "User",
+        eventType: "UserRoleUpdated",
+        eventData: {
+          userId: updatedUser.id,
+          role: updatedUser.publicMetadata?.role,
+          updatedAt: updatedUser.updatedAt,
+        },
+        metadata: {
+          service: "user-service",
+          version: "1.0.0",
+          requestId: this.generateRequestId(),
+        },
+      });
+
       callback(null, {
         user: transformUser(updatedUser),
         message: "User role updated successfully",
@@ -301,6 +404,7 @@ export const userService = {
       );
       grpcError.code = getGrpcErrorCode(error);
 
+      await this.publishErrorEvent("UserRoleUpdateFailed", error, call.request);
       callback(grpcError);
     }
   },

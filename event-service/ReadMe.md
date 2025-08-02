@@ -23,6 +23,12 @@ grpc_tools_ruby_protoc -I ./protos --ruby_out=./server/lib --grpc_out=./server/l
 
 grpc_tools_ruby_protoc -I proto --ruby_out=lib/event_service/grpc --grpc_out=lib/event_service/grpc proto/event_service.proto
 
+grpc_tools_ruby_protoc -I protos --ruby_out=lib/grpc/eventpb --grpc_out=lib/grpc/eventpb protos/event.proto
+grpc_tools_ruby_protoc -I protos --ruby_out=lib/grpc/commentpb --grpc_out=lib/grpc/commentpb protos/comment.proto
+grpc_tools_ruby_protoc -I protos --ruby_out=lib/grpc/eventpb --grpc_out=lib/grpc/eventpb protos/event.proto
+grpc_tools_ruby_protoc -I protos --ruby_out=lib/grpc/eventpb --grpc_out=lib/grpc/eventpb protos/event.proto
+grpc_tools_ruby_protoc -I protos --ruby_out=lib/grpc/eventpb --grpc_out=lib/grpc/eventpb protos/event.proto
+
 ruby bin/server
 https://dev.to/torianne02/sequel-an-alternative-to-activerecord-5d6l
 

@@ -115,6 +115,107 @@ module EventService
       end
     end
 
+    def route_event(event)
+      event_type = event['event_type']
+      
+      case event_type
+      # User events
+      when 'user.created'
+        handle_user_created(event)
+      when 'user.updated'
+        handle_user_updated(event)
+      when 'user.deleted'
+        handle_user_deleted(event)
+      
+      # Post events
+      when 'post.created'
+        handle_post_created(event)
+      when 'post.updated'
+        handle_post_updated(event)
+      when 'post.deleted'
+        handle_post_deleted(event)
+      
+      # Comment events
+      when 'comment.created'
+        handle_comment_created(event)
+      when 'comment.updated'
+        handle_comment_updated(event)
+      when 'comment.deleted'
+        handle_comment_deleted(event)
+      
+      # Like events
+      when 'like.added'
+        handle_like_added(event)
+      when 'like.removed'
+        handle_like_removed(event)
+      
+      else
+        logger.warn("Unknown event type: #{event_type}")
+      end
+    rescue => e
+      logger.error("Error routing event #{event['id']} (#{event_type}): #{e.message}")
+      raise e
+    end
+
+    # User event handlers
+    def handle_user_created(event)
+      logger.info("User created: #{event['aggregate_id']}")
+      # Add any user creation logic here
+    end
+
+    def handle_user_updated(event)
+      logger.info("User updated: #{event['aggregate_id']}")
+      # Add any user update logic here
+    end
+
+    def handle_user_deleted(event)
+      logger.info("User deleted: #{event['aggregate_id']}")
+      # Add any user deletion logic here
+    end
+
+    # Post event handlers
+    def handle_post_created(event)
+      logger.info("Post created: #{event['aggregate_id']}")
+      # Add any post creation logic here
+    end
+
+    def handle_post_updated(event)
+      logger.info("Post updated: #{event['aggregate_id']}")
+      # Add any post update logic here
+    end
+
+    def handle_post_deleted(event)
+      logger.info("Post deleted: #{event['aggregate_id']}")
+      # Add any post deletion logic here
+    end
+
+    # Comment event handlers
+    def handle_comment_created(event)
+      logger.info("Comment created: #{event['aggregate_id']}")
+      # Add any comment creation logic here
+    end
+
+    def handle_comment_updated(event)
+      logger.info("Comment updated: #{event['aggregate_id']}")
+      # Add any comment update logic here
+    end
+
+    def handle_comment_deleted(event)
+      logger.info("Comment deleted: #{event['aggregate_id']}")
+      # Add any comment deletion logic here
+    end
+
+    # Like event handlers
+    def handle_like_added(event)
+      logger.info("Like added: #{event['aggregate_id']}")
+      # Add any like addition logic here
+    end
+
+    def handle_like_removed(event)
+      logger.info("Like removed: #{event['aggregate_id']}")
+      # Add any like removal logic here
+    end
+
     def process_message(delivery_info, properties, payload, callback)
       event_data = JSON.parse(payload)
       

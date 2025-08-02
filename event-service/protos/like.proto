@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package like;
+
+import "google/protobuf/timestamp.proto";
+
+service LikesService {
+  rpc LikePost(LikePostRequest) returns (LikePostResponse);
+  rpc UnlikePost(UnlikePostRequest) returns (UnlikePostResponse);
+  rpc GetUserLikes(GetUserLikesRequest) returns (GetUserLikesResponse);
+  rpc GetPostLikes(GetPostLikesRequest) returns (GetPostLikesResponse);
+  rpc IsPostLiked(IsPostLikedRequest) returns (IsPostLikedResponse);
+  rpc GetLikesCount(GetLikesCountRequest) returns (GetLikesCountResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc UnlikePosts(UnlikePostsRequest) returns (UnlikePostResponse);
+}
+
+// Like Post
+message LikePostRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+message LikePostResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Timestamp liked_at = 3;
+}
+
+// Unlike Post
+message UnlikePostRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+message UnlikePostResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Unlike Posts
+message UnlikePostsRequest {
+  repeated string user_ids = 1;
+  repeated string post_ids = 2;
+}
+
+// Get User Likes
+message GetUserLikesRequest {
+  string user_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message GetUserLikesResponse {
+  repeated UserLike likes = 1;
+  PaginationInfo pagination = 2;
+}
+
+message UserLike {
+  string post_id = 1;
+  google.protobuf.Timestamp liked_at = 2;
+}
+
+// Get Post Likes
+message GetPostLikesRequest {
+  string post_id = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message GetPostLikesResponse {
+  repeated PostLike likes = 1;
+  PaginationInfo pagination = 2;
+}
+
+message PostLike {
+  string user_id = 1;
+  google.protobuf.Timestamp liked_at = 2;
+}
+
+// Check if Post is Liked
+message IsPostLikedRequest {
+  string user_id = 1;
+  string post_id = 2;
+}
+
+message IsPostLikedResponse {
+  bool is_liked = 1;
+  google.protobuf.Timestamp liked_at = 2;
+}
+
+// Get Likes Count
+message GetLikesCountRequest { string post_id = 1; }
+
+message GetLikesCountResponse { int64 count = 1; }
+
+// Health Check
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  google.protobuf.Timestamp timestamp = 2;
+}
+
+// Pagination
+message PaginationInfo {
+  int32 current_page = 1;
+  int32 total_pages = 2;
+  int64 total_count = 3;
+  int32 limit = 4;
+}

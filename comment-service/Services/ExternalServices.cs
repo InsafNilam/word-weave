@@ -12,12 +12,22 @@ namespace CommentService.Services
         Task<bool> ValidatePostAsync(int postId);
         Task<User?> GetUserAsync(string userId);
         Task<Post?> GetPostAsync(int postId);
+        Task<Event?> PublishEvent(
+            string aggregate_id,
+            string aggregate_type,
+            string event_type,
+            string event_data,
+            string metadata,
+            string correlation_id,
+            string causation_id
+        );
     }
 
     public class ExternalServices : IExternalServices
     {
         private readonly UserService.UserServiceClient _userServiceClient;
         private readonly PostService.PostServiceClient _postServiceClient;
+        private readonly EventService.EventServiceClient _eventServiceClient;
         private readonly IDistributedCache _cache;
         private readonly ILogger<ExternalServices> _logger;
         private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
@@ -33,12 +43,15 @@ namespace CommentService.Services
             // Initialize gRPC clients
             var userServiceUrl = configuration["GrpcSettings:UserServiceUrl"];
             var postServiceUrl = configuration["GrpcSettings:PostServiceUrl"];
+            var eventServiceUrl = configuration["GrpcSettings:EventServiceUrl"];
 
             var userChannel = GrpcChannel.ForAddress(userServiceUrl!);
             var postChannel = GrpcChannel.ForAddress(postServiceUrl!);
+            var eventChannel = GrpcChannel.ForAddress(eventServiceUrl!);
 
             _userServiceClient = new UserService.UserServiceClient(userChannel);
             _postServiceClient = new PostService.PostServiceClient(postChannel);
+            _eventServiceClient = new EventService.EventServiceClient(eventChannel);
         }
 
         public async Task<bool> ValidateUserAsync(string userId)
@@ -225,6 +238,60 @@ namespace CommentService.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to set cache for key {CacheKey}", key);
+            }
+        }
+
+        public async Task<Event?> PublishEvent(
+            string aggregate_id,
+            string aggregate_type,
+            string event_type,
+            string event_data,
+            string metadata,
+            string correlation_id,
+            string causation_id)
+        {
+            try
+            {
+                var request = new PublishEventRequest
+                {
+                    AggregateId = aggregate_id,
+                    AggregateType = aggregate_type,
+                    EventType = event_type,
+                    EventData = event_data,
+                    Metadata = metadata,
+                    CorrelationId = correlation_id,
+                    CausationId = causation_id
+                };
+
+                var response = await _eventServiceClient.PublishEventAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
+
+                if (response.Success && response.EventId != null)
+                {
+                    return new Event
+                    {
+                        Id = response.EventId,
+                        AggregateId = aggregate_id,
+                        AggregateType = aggregate_type,
+                        EventType = event_type,
+                        EventData = event_data,
+                        Metadata = metadata,
+                        CorrelationId = correlation_id,
+                        CausationId = causation_id,
+                    };
+                }
+
+                _logger.LogWarning("Failed to publish event: {Message}", response.Message);
+                return null;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "gRPC error publishing event: {StatusCode}", ex.StatusCode);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error publishing event");
+                return null;
             }
         }
     }

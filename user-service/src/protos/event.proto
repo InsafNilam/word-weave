@@ -1,65 +1,7 @@
 syntax = "proto3";
 
-option csharp_namespace = "CommentService.ExternalGrpc";
+package event;
 
-package external;
-
-// User Service Client
-service UserService {
-  rpc GetUser(GetUserRequest) returns (UserResponse);
-  rpc ValidateUser(ValidateUserRequest) returns (ValidateUserResponse);
-}
-
-message GetUserRequest { string user_id = 1; }
-
-message UserResponse {
-  bool success = 1;
-  string message = 2;
-  User user = 3;
-}
-
-message User {
-  string id = 1;
-  string username = 2;
-  string email = 3;
-}
-
-message ValidateUserRequest { string user_id = 1; }
-
-message ValidateUserResponse {
-  bool is_valid = 1;
-  bool exists = 2;
-}
-
-// Post Service Client
-service PostService {
-  rpc GetPost(GetPostRequest) returns (PostResponse);
-  rpc ValidatePost(ValidatePostRequest) returns (ValidatePostResponse);
-}
-
-message GetPostRequest { int32 post_id = 1; }
-
-message PostResponse {
-  bool success = 1;
-  string message = 2;
-  Post post = 3;
-}
-
-message Post {
-  int32 id = 1;
-  string title = 2;
-  string content = 3;
-  string user_id = 4;
-}
-
-message ValidatePostRequest { int32 post_id = 1; }
-
-message ValidatePostResponse {
-  bool is_valid = 1;
-  bool exists = 2;
-}
-
-// Event Service Client
 service EventService {
   rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
   rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);

@@ -72,3 +72,11 @@ export const getGrpcErrorCode = (error) => {
 
   return 13; // INTERNAL
 };
+
+export const generateRequestId = () => {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+export const generateCorrelationId = () => {
+  return `corr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
