@@ -7,19 +7,23 @@ import (
 	"time"
 
 	"post-service/models"
-	pb "post-service/proto/postpb"
+	eventpb "post-service/protos/eventpb"
+	pb "post-service/protos/postpb"
 	"post-service/repository"
+
+	event_client "post-service/clients"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type PostServiceServer struct {
 	pb.UnimplementedPostServiceServer
-	repo repository.PostRepository
+	repo        repository.PostRepository
+	eventClient *event_client.EventServiceClient
 }
 
-func NewPostServiceServer(repo repository.PostRepository) *PostServiceServer {
-	return &PostServiceServer{repo: repo}
+func NewPostServiceServer(repo repository.PostRepository, eventClient *event_client.EventServiceClient) *PostServiceServer {
+	return &PostServiceServer{repo: repo, eventClient: eventClient}
 }
 
 func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*pb.PostResponse, error) {
@@ -46,6 +50,20 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 			Success: false,
 			Message: fmt.Sprintf("Failed to create post: %v", err),
 		}, nil
+	}
+
+	// 📤 Publish domain event
+	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
+		AggregateId:   fmt.Sprintf("%d", post.ID),
+		AggregateType: "post",
+		EventType:     "post.created",
+		EventData:     fmt.Sprintf(`{"title":"%s","userId":"%s"}`, post.Title, post.UserID),
+		Metadata:      fmt.Sprintf(`{"user_id":"%s","created_at":"%s"}`, req.UserId, time.Now().UTC().Format(time.RFC3339)),
+	})
+
+	if err != nil {
+		// Log but don't fail post creation
+		fmt.Printf("⚠️ Failed to publish event: %v\n", err)
 	}
 
 	return &pb.PostResponse{
@@ -139,6 +157,20 @@ func (s *PostServiceServer) UpdatePost(ctx context.Context, req *pb.UpdatePostRe
 		}, nil
 	}
 
+	// 📤 Publish domain event
+	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
+		AggregateId:   fmt.Sprintf("%d", existingPost.ID),
+		AggregateType: "post",
+		EventType:     "post.updated",
+		EventData:     fmt.Sprintf(`{"title":"%s","userId":"%s"}`, existingPost.Title, existingPost.UserID),
+		Metadata:      fmt.Sprintf(`{"user_id":"%s","updated_at":"%s"}`, req.UserId, time.Now().UTC().Format(time.RFC3339)),
+	})
+
+	if err != nil {
+		// Log but don't fail post update
+		fmt.Printf("⚠️ Failed to publish event: %v\n", err)
+	}
+
 	return &pb.PostResponse{
 		Post:    s.modelToProto(existingPost),
 		Success: true,
@@ -153,6 +185,20 @@ func (s *PostServiceServer) DeletePost(ctx context.Context, req *pb.DeletePostRe
 			Success: false,
 			Message: err.Error(),
 		}, nil
+	}
+
+	// 📤 Publish domain event
+	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
+		AggregateId:   fmt.Sprintf("%d", req.Id),
+		AggregateType: "post",
+		EventType:     "post.deleted",
+		EventData:     fmt.Sprintf(`{"id":%d,"userId":"%s"}`, req.Id, req.UserId),
+		Metadata:      fmt.Sprintf(`{"user_id":"%s","deleted_at":"%s"}`, req.UserId, time.Now().UTC().Format(time.RFC3339)),
+	})
+
+	if err != nil {
+		// Log but don't fail post deletion
+		fmt.Printf("⚠️ Failed to publish event: %v\n", err)
 	}
 
 	return &pb.DeletePostResponse{
