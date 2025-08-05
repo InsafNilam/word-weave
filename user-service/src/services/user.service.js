@@ -377,7 +377,7 @@ export const userService = {
       await eventClient.publishEvent({
         aggregateId: updatedUser.id,
         aggregateType: "User",
-        eventType: "UserRoleUpdated",
+        eventType: "user.updated",
         eventData: {
           userId: updatedUser.id,
           role: updatedUser.publicMetadata?.role,

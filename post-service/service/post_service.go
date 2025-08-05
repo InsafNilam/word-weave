@@ -74,7 +74,7 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 	// 📤 Publish domain event
 	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
 		AggregateId:   fmt.Sprintf("%d", post.ID),
-		AggregateType: "post",
+		AggregateType: "Post",
 		EventType:     "post.created",
 		EventData:     fmt.Sprintf(`{"title":"%s","userId":"%s"}`, post.Title, post.UserID),
 		Metadata:      fmt.Sprintf(`{"user_id":"%s","created_at":"%s"}`, req.UserId, time.Now().UTC().Format(time.RFC3339)),
@@ -179,7 +179,7 @@ func (s *PostServiceServer) UpdatePost(ctx context.Context, req *pb.UpdatePostRe
 	// 📤 Publish domain event
 	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
 		AggregateId:   fmt.Sprintf("%d", existingPost.ID),
-		AggregateType: "post",
+		AggregateType: "Post",
 		EventType:     "post.updated",
 		EventData:     fmt.Sprintf(`{"title":"%s","userId":"%s"}`, existingPost.Title, existingPost.UserID),
 		Metadata:      fmt.Sprintf(`{"user_id":"%s","updated_at":"%s"}`, req.UserId, time.Now().UTC().Format(time.RFC3339)),
@@ -209,7 +209,7 @@ func (s *PostServiceServer) DeletePost(ctx context.Context, req *pb.DeletePostRe
 	// 📤 Publish domain event
 	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
 		AggregateId:   fmt.Sprintf("%d", req.Id),
-		AggregateType: "post",
+		AggregateType: "Post",
 		EventType:     "post.deleted",
 		EventData:     fmt.Sprintf(`{"id":%d,"userId":"%s"}`, req.Id, req.UserId),
 		Metadata:      fmt.Sprintf(`{"user_id":"%s","deleted_at":"%s"}`, req.UserId, time.Now().UTC().Format(time.RFC3339)),
@@ -447,7 +447,7 @@ func (s *PostServiceServer) DeletePosts(ctx context.Context, req *pb.DeletePosts
 	for _, id := range req.Ids {
 		_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
 			AggregateId:   fmt.Sprintf("%d", id),
-			AggregateType: "post",
+			AggregateType: "Post",
 			EventType:     "post.deleted",
 			EventData:     fmt.Sprintf(`{"id":%d,"userId":"%s"}`, id, req.UserIds),
 			Metadata:      fmt.Sprintf(`{"user_id":"%s","deleted_at":"%s"}`, req.UserIds, time.Now().UTC().Format(time.RFC3339)),
