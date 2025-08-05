@@ -123,6 +123,7 @@ export const userService = {
       callback(null, {
         user: transformUser(user),
         message: "User retrieved successfully",
+        success: true,
       });
     } catch (error) {
       console.error("Error in GetUser:", {

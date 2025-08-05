@@ -74,10 +74,10 @@ namespace CommentService.Services
 
             try
             {
-                var request = new ValidateUserRequest { UserId = userId };
-                var response = await _userServiceClient.ValidateUserAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
+                var request = new GetUserRequest { UserId = userId };
+                var response = await _userServiceClient.GetUserAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
 
-                var isValid = response.IsValid && response.Exists;
+                var isValid = response.Success;
                 await SetCacheAsync(cacheKey, isValid);
 
                 _logger.LogDebug("User validation for {UserId}: {IsValid}", userId, isValid);
@@ -115,10 +115,10 @@ namespace CommentService.Services
 
             try
             {
-                var request = new ValidatePostRequest { PostId = postId };
-                var response = await _postServiceClient.ValidatePostAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
+                var request = new GetPostRequest { PostId = postId };
+                var response = await _postServiceClient.GetPostAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
 
-                var isValid = response.IsValid && response.Exists;
+                var isValid = response.Success;
                 await SetCacheAsync(cacheKey, isValid);
 
                 _logger.LogDebug("Post validation for {PostId}: {IsValid}", postId, isValid);
