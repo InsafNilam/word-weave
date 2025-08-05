@@ -2,11 +2,13 @@ require 'bunny'
 require 'json'
 require 'concurrent'
 
+require_relative '../clients/client_pool'
+
 module EventService
   class EventConsumer
     include Concurrent::Async
 
-    attr_reader :connection, :channel, :logger, :subscriptions
+    attr_reader :connection, :channel, :logger, :subscriptions, :client_pool
 
     def initialize(rabbitmq_url = nil, logger = nil)
       @rabbitmq_url = rabbitmq_url || EventService.configuration.rabbitmq_url
@@ -15,6 +17,7 @@ module EventService
       @channel = nil
       @subscriptions = {}
       @running = false
+      @client_pool = GrpcClients::ClientPool.instance
       super()
     end
 
@@ -110,6 +113,7 @@ module EventService
           event_types: subscription.event_types_array
         ) do |event|
           # Default handler - log the event
+          route_event(event)
           logger.info("Received event: #{event['event_type']} for #{event['aggregate_type']}:#{event['aggregate_id']}")
         end
       end
@@ -121,34 +125,26 @@ module EventService
       case event_type
       # User events
       when 'user.created'
-        handle_user_created(event)
+        user_id = event_data['user_id']
+        logger.info("User created: #{user_id}")
       when 'user.updated'
-        handle_user_updated(event)
+        user_id = event_data['user_id']
+        logger.info("User updated: #{user_id}")
       when 'user.deleted'
         handle_user_deleted(event)
       
       # Post events
       when 'post.created'
-        handle_post_created(event)
+        post_id = event_data['post_id']
+        user_id = event_data['user_id']
+        logger.info("Post created: #{post_id} by user: #{user_id}")
       when 'post.updated'
-        handle_post_updated(event)
+        post_id = event_data['post_id']
+        user_id = event_data['user_id']
+        logger.info("Post updated: #{post_id} by user: #{user_id}")
       when 'post.deleted'
         handle_post_deleted(event)
-      
-      # Comment events
-      when 'comment.created'
-        handle_comment_created(event)
-      when 'comment.updated'
-        handle_comment_updated(event)
-      when 'comment.deleted'
-        handle_comment_deleted(event)
-      
-      # Like events
-      when 'like.added'
-        handle_like_added(event)
-      when 'like.removed'
-        handle_like_removed(event)
-      
+
       else
         logger.warn("Unknown event type: #{event_type}")
       end
@@ -157,63 +153,75 @@ module EventService
       raise e
     end
 
-    # User event handlers
-    def handle_user_created(event)
-      logger.info("User created: #{event['aggregate_id']}")
-      # Add any user creation logic here
-    end
-
-    def handle_user_updated(event)
-      logger.info("User updated: #{event['aggregate_id']}")
-      # Add any user update logic here
-    end
-
     def handle_user_deleted(event)
-      logger.info("User deleted: #{event['aggregate_id']}")
-      # Add any user deletion logic here
+      user_id = event['aggregate_id']
+      logger.info("User deleted: #{user_id}")
+
+      # Delete posts
+      @client_pool.with_post_client do |post_client|
+        posts_response = post_client.list_posts(user_id: user_id)
+        if posts_response&.posts&.any?
+          success = post_client.delete_posts(user_ids: [user_id])
+          success ? logger.info("Deleted posts for user: #{user_id}") : logger.error("Failed to delete posts for user: #{user_id}")
+        else
+          logger.info("No posts found for user.")
+        end
+      end
+
+      # Delete comments
+      @client_pool.with_comment_client do |comment_client|
+        comments_response = comment_client.get_comments_by_user(user_id: user_id)
+        if comments_response&.comments&.any?
+          success = comment_client.delete_comments(user_ids: [user_id])
+          success ? logger.info("Deleted comments for user: #{user_id}") : logger.error("Failed to delete comments for user: #{user_id}")
+        else
+          logger.info("No comments found for user.")
+        end
+      end
+
+      # Delete likes
+      @client_pool.with_like_client do |like_client|
+        liked_response = like_client.get_user_likes(user_id)
+        if liked_response&.likes&.any?
+          success = like_client.unlike_post(user_ids: [user_id])
+          success ? logger.info("Deleted like for user: #{user_id}") : logger.error("Failed to delete like for user: #{user_id}")
+        else
+          logger.info("No likes found for user.")
+        end
+      end
+
+    rescue StandardError => e
+      logger.error("Error handling user.deleted for #{user_id}: #{e.message}")
     end
 
-    # Post event handlers
-    def handle_post_created(event)
-      logger.info("Post created: #{event['aggregate_id']}")
-      # Add any post creation logic here
-    end
-
-    def handle_post_updated(event)
-      logger.info("Post updated: #{event['aggregate_id']}")
-      # Add any post update logic here
-    end
 
     def handle_post_deleted(event)
-      logger.info("Post deleted: #{event['aggregate_id']}")
-      # Add any post deletion logic here
-    end
+      post_id = event['aggregate_id']
+      logger.info("Post deleted: #{post_id}")
 
-    # Comment event handlers
-    def handle_comment_created(event)
-      logger.info("Comment created: #{event['aggregate_id']}")
-      # Add any comment creation logic here
-    end
+      # Delete comments
+      @client_pool.with_comment_client do |comment_client|
+        comments_response = comment_client.get_comments_by_post(post_id: post_id)
+        if comments_response&.comments&.any?
+          success = comment_client.delete_comments(post_ids:[post_id])
+          success ? logger.info("Deleted comments for post: #{post_id}") : logger.error("Failed to delete comments for post: #{post_id}")
+        else
+          logger.info("No comments found for post.")
+        end
+      end
 
-    def handle_comment_updated(event)
-      logger.info("Comment updated: #{event['aggregate_id']}")
-      # Add any comment update logic here
-    end
-
-    def handle_comment_deleted(event)
-      logger.info("Comment deleted: #{event['aggregate_id']}")
-      # Add any comment deletion logic here
-    end
-
-    # Like event handlers
-    def handle_like_added(event)
-      logger.info("Like added: #{event['aggregate_id']}")
-      # Add any like addition logic here
-    end
-
-    def handle_like_removed(event)
-      logger.info("Like removed: #{event['aggregate_id']}")
-      # Add any like removal logic here
+      # Delete likes
+      @client_pool.with_like_client do |like_client|
+        liked_response = like_client.get_post_likes(post_id)
+        if liked_response&.likes&.any?
+          success = like_client.unlike_post(post_ids: [post_id])
+          success ? logger.info("Deleted like for post: #{post_id}") : logger.error("Failed to delete like for post: #{post_id}")
+        else
+          logger.info("No likes found for post.")
+        end
+      end
+    rescue StandardError => e
+      logger.error("Error handling user.deleted for #{user_id}: #{e.message}")
     end
 
     def process_message(delivery_info, properties, payload, callback)

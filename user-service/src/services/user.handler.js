@@ -26,8 +26,6 @@ export class UserHandler {
 
       if (deletedUser) {
         console.log(`✅ User deleted: ${deletedUser.username}`);
-        // TODO: Publish user.deleted event for other services
-        // await eventPublisher.publish("user.deleted", { userId: deletedUser._id });
       } else {
         console.warn(`⚠️ User not found for deletion: ${clerkUserId}`);
       }

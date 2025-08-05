@@ -403,18 +403,34 @@ namespace CommentService.GrpcServices
         {
             try
             {
-                _logger.LogInformation("Deleting multiple comments for user {UserId}", request.UserId);
+                _logger.LogInformation("Deleting comments — Users: {UserIds}, Posts: {PostIds}",
+                    request.UserIds.Count, request.PostIds.Count);
 
-                if (request.Ids == null || request.Ids.Count == 0)
+                // Validate input
+                if ((request.UserIds == null || request.UserIds.Count == 0) &&
+                    (request.PostIds == null || request.PostIds.Count == 0))
                 {
                     return new DeleteCommentResponse
                     {
                         Success = false,
-                        Message = "At least one comment ID is required"
+                        Message = "At least one of Ids, UserIds, or PostIds must be provided"
                     };
                 }
 
-                var deletedCount = await _commentRepository.DeleteMultipleAsync(request.Ids);
+                // Pass to repository to handle conditional deletion
+                bool deletedCount = await _commentRepository.DeleteMultipleAsync(
+                    request.UserIds != null ? request.UserIds.ToList() : new List<string>(),
+                    request.PostIds != null ? request.PostIds.ToList() : new List<int>()
+                );
+
+                if (!deletedCount)
+                {
+                    return new DeleteCommentResponse
+                    {
+                        Success = false,
+                        Message = "No comments deleted"
+                    };
+                }
 
                 return new DeleteCommentResponse
                 {
@@ -424,7 +440,7 @@ namespace CommentService.GrpcServices
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting multiple comments for user {UserId}", request.UserId);
+                _logger.LogError(ex, "Error deleting comments");
                 throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
             }
         }

@@ -190,16 +190,25 @@ func (r *postRepository) CountPosts(user_id, category string, is_featured bool) 
 }
 
 func (r *postRepository) DeletePosts(ids []uint32, userIds []string) error {
-	if len(ids) == 0 || len(userIds) == 0 {
-		return errors.New("ids and userIds cannot be empty")
+	if len(ids) == 0 && len(userIds) == 0 {
+		return errors.New("either ids or userIds must be provided")
 	}
 
-	result := r.db.Where("id IN ? AND user_id IN ?", ids, userIds).Delete(&models.Post{})
+	query := r.db.Model(&models.Post{})
+
+	if len(ids) > 0 {
+		query = query.Where("id IN ?", ids)
+	}
+	if len(userIds) > 0 {
+		query = query.Where("user_id IN ?", userIds)
+	}
+
+	result := query.Delete(&models.Post{})
 	if result.Error != nil {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("no posts found for the given ids and userIds")
+		return errors.New("no posts found for the given criteria")
 	}
 	return nil
 }

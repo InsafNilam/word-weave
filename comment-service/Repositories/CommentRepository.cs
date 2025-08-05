@@ -14,7 +14,7 @@ namespace CommentService.Repositories
         Task<Comment?> UpdateAsync(Comment comment);
         Task<bool> DeleteAsync(int id);
         Task<int> GetCommentCountByPostIdAsync(int postId);
-        Task<bool> DeleteMultipleAsync(IEnumerable<int> ids);
+        Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<int> postIds);
     }
 
     public class CommentRepository : ICommentRepository
@@ -209,24 +209,30 @@ namespace CommentService.Repositories
             return count;
         }
 
-        public async Task<bool> DeleteMultipleAsync(IEnumerable<int> ids)
+        public async Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<int> postIds)
         {
-            var comments = await _context.Comments.Where(c => ids.Contains(c.Id)).ToListAsync();
-            if (!comments.Any())
+            if (userIds == null || !userIds.Any() || postIds == null || !postIds.Any())
                 return false;
 
-            _context.Comments.RemoveRange(comments);
+            var commentsToDelete = await _context.Comments
+                .Where(c => userIds.Contains(c.UserId) || postIds.Contains(c.PostId))
+                .ToListAsync();
+
+            if (!commentsToDelete.Any())
+                return false;
+
+            _context.Comments.RemoveRange(commentsToDelete);
             await _context.SaveChangesAsync();
 
-            foreach (var comment in comments)
+            // Invalidate caches for each deleted comment
+            foreach (var comment in commentsToDelete)
             {
-                // Invalidate caches for each deleted comment
                 await _cache.RemoveAsync($"comment:{comment.Id}");
                 await InvalidatePostCommentsCache(comment.PostId);
                 await InvalidateUserCommentsCache(comment.UserId);
             }
 
-            _logger.LogInformation("Deleted multiple comments: {CommentIds}", string.Join(", ", ids));
+            _logger.LogInformation("Deleted multiple comments for users {UserIds} and posts {PostIds}", string.Join(", ", userIds), string.Join(", ", postIds));
             return true;
         }
 

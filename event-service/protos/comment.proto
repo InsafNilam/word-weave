@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package comment;
 
-import "google/protobuf/timestamp.proto";
-
 // Comment Service
 service CommentService {
   rpc CreateComment(CreateCommentRequest) returns (CommentResponse);
@@ -58,7 +56,11 @@ message DeleteCommentRequest {
   int32 post_id = 3;
 }
 
-message DeleteCommentsRequest { repeated int32 ids = 1; }
+message DeleteCommentsRequest {
+  repeated int32 ids = 1;
+  repeated string user_ids = 2;
+  repeated int32 post_ids = 3;
+}
 
 message GetCommentCountRequest { int32 post_id = 1; }
 

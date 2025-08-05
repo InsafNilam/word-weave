@@ -177,7 +177,7 @@ export const userService = {
       await this.eventClient.publishEvent({
         aggregateId: newUser.id,
         aggregateType: "User",
-        eventType: "UserCreated",
+        eventType: "user.created",
         eventData: {
           userId: newUser.id,
           email: newUser.emailAddresses[0]?.emailAddress,
@@ -237,7 +237,7 @@ export const userService = {
       await eventClient.publishEvent({
         aggregateId: updatedUser.id,
         aggregateType: "User",
-        eventType: "UserUpdated",
+        eventType: "user.updated",
         eventData: {
           userId: updatedUser.id,
           email: updatedUser.emailAddresses[0]?.emailAddress,
@@ -285,7 +285,7 @@ export const userService = {
       await eventClient.publishEvent({
         aggregateId: deletedUser.id,
         aggregateType: "User",
-        eventType: "UserDeleted",
+        eventType: "user.deleted",
         eventData: {
           userId: deletedUser.id,
           email: deletedUser.emailAddresses[0]?.emailAddress,

@@ -10,9 +10,19 @@ module EventService
     REQUIRED_ENV_VARS = %w[DATABASE_URL].freeze
     DEFAULT_VALUES = {
       database_url: 'postgres://localhost:5432/event_service',
+      user_service_host: 'user-service',
+      user_service_port: 50051,
+      post_service_host: 'post-service',
+      post_service_port: 50052,
+      comment_service_host: 'comment-service',
+      comment_service_port: 50053,
+      like_service_host: 'like-service',
+      like_service_port: 50054,
+      media_service_host: 'media-service',
+      media_service_port: 50055,
       rabbitmq_url: 'amqp://localhost:5672',
       redis_url: 'redis://localhost:6379',
-      grpc_port: '50051',
+      grpc_port: '50055',
       log_level: 'INFO'
     }.freeze
 
@@ -51,6 +61,16 @@ module EventService
       @redis_url = ENV['REDIS_URL'] || DEFAULT_VALUES[:redis_url]
       @grpc_port = ENV['GRPC_PORT'] || DEFAULT_VALUES[:grpc_port]
       @log_level = ENV['LOG_LEVEL'] || DEFAULT_VALUES[:log_level]
+      @user_service_host = ENV['USER_SERVICE_HOST'] || DEFAULT_VALUES[:user_service_host]
+      @user_service_port = ENV['USER_SERVICE_PORT'] || DEFAULT_VALUES[:user_service_port]
+      @post_service_host = ENV['POST_SERVICE_HOST'] || DEFAULT_VALUES[:post_service_host]
+      @post_service_port = ENV['POST_SERVICE_PORT'] || DEFAULT_VALUES[:post_service_port]
+      @comment_service_host = ENV['COMMENT_SERVICE_HOST'] || DEFAULT_VALUES[:comment_service_host]
+      @comment_service_port = ENV['COMMENT_SERVICE_PORT'] || DEFAULT_VALUES[:comment_service_port]
+      @like_service_host = ENV['LIKE_SERVICE_HOST'] || DEFAULT_VALUES[:like_service_host]
+      @like_service_port = ENV['LIKE_SERVICE_PORT'] || DEFAULT_VALUES[:like_service_port]
+      @media_service_host = ENV['MEDIA_SERVICE_HOST'] || DEFAULT_VALUES[:media_service_host]
+      @media_service_port = ENV['MEDIA_SERVICE_PORT'] || DEFAULT_VALUES[:media_service_port]
     end
 
     def validate_required_configuration
