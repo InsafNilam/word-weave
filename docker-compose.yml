@@ -122,6 +122,23 @@ services:
         timeout: 10s
         retries: 3
 
+  # Word Weave Frontend
+  word-weave:
+    build:
+      context: ./frontend-service
+      dockerfile: Dockerfile
+    container_name: word-weave
+    environment:
+      - VITE_API_URL=http://api-gateway:8080
+      - VITE_IK_URL_ENDPOINT=${IMAGEKIT_URL_ENDPOINT}
+      - VITE_IK_PUBLIC_KEY=${IMAGEKIT_PUBLIC_KEY}
+      - VITE_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+    ports:
+      - "5173:5173"
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
   # API Gateway
   api-gateway:
     build:
@@ -129,11 +146,13 @@ services:
       dockerfile: Dockerfile
     container_name: api-gateway
     environment:
-      - PORT=${PORT}
+      - PORT=${API_PORT}
       - POST_SERVICE_ADDR=${POST_SERVICE_ADDR}
       - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
       - LIKE_SERVICE_ADDR=${LIKE_SERVICE_ADDR}
       - COMMENT_SERVICE_ADDR=${COMMENT_SERVICE_ADDR}
+      - EVENT_SERVICE_ADDR=${EVENT_SERVICE_ADDR}
+      - MEDIA_SERVICE_ADDR=${MEDIA_SERVICE_ADDR}
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
     ports:
@@ -156,7 +175,13 @@ services:
     environment:
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_WEBHOOK_SIGNING_SECRET=${CLERK_WEBHOOK_SIGNING_SECRET}
       - GRPC_PORT=50051
+      - WEBHOOK_PORT=${WEBHOOK_PORT}
+      - WEBHOOK_HOST=${WEBHOOK_HOST}
+      - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@user-db:27017/user_db
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - EVENT_SERVICE_HOST=${EVENT_SERVICE_ADDR}
     ports:
       - "50051:50051"
     networks:
@@ -174,9 +199,10 @@ services:
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
+      - DB_NAME=post_db
       - GRPC_PORT=50052
       - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
+      - EVENT_SERVICE_ADDRESS=${EVENT_SERVICE_ADDR}
     ports:
       - "50052:50052"
     depends_on:
@@ -214,13 +240,12 @@ services:
       dockerfile: Dockerfile
     container_name: comment-service
     environment:
-      - DB_HOST=post-db
-      - DB_PORT=5432
-      - DB_USER=postuser
-      - DB_PASSWORD=postpass
-      - DB_NAME=postdb
-      - GRPC_PORT=50054
-      - USER_SERVICE_ADDR=user-service:50051
+      - CONNECTIONSTRINGS__DEFAULTCONNECTION=${CONNECTIONSTRINGS__DEFAULTCONNECTION}
+      - CONNECTIONSTRINGS__REDIS=${CONNECTIONSTRINGS__REDIS}
+      - GRPCSETTINGS__USERSERVICEURL=${USER_SERVICE_ADDR}
+      - GRPCSETTINGS__POSTSERVICEURL=${POST_SERVICE_ADDR}
+      - GRPCSETTINGS__EVENTSERVICEURL=${EVENT_SERVICE_ADDR}
+      - KESTREL__ENDPOINTS__GRPC__URL=${COMMENT_SERVICE_ADDR}
     ports:
       - "50054:50054"
     depends_on:
@@ -233,7 +258,7 @@ services:
   event_service:
     build: .
     environment:
-      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_service
+      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_db
       RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
       REDIS_URL: redis://redis:6379
       GRPC_PORT: 50055

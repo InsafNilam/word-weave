@@ -5,8 +5,17 @@ using CommentService.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System.Reflection;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ✅ Load environment variables from .env file
+Env.Load();
+
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
 // Configure logging with Serilog
 Log.Logger = new LoggerConfiguration()
