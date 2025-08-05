@@ -9,9 +9,9 @@ namespace CommentService.Services
     public interface IExternalServices
     {
         Task<bool> ValidateUserAsync(string userId);
-        Task<bool> ValidatePostAsync(int postId);
+        Task<bool> ValidatePostAsync(uint postId);
         Task<User?> GetUserAsync(string userId);
-        Task<Post?> GetPostAsync(int postId);
+        Task<Post?> GetPostAsync(uint postId);
         Task<Event?> PublishEvent(
             string aggregate_id,
             string aggregate_type,
@@ -95,7 +95,7 @@ namespace CommentService.Services
             }
         }
 
-        public async Task<bool> ValidatePostAsync(int postId)
+        public async Task<bool> ValidatePostAsync(uint postId)
         {
             var cacheKey = $"post_validation:{postId}";
 
@@ -180,7 +180,7 @@ namespace CommentService.Services
             }
         }
 
-        public async Task<Post?> GetPostAsync(int postId)
+        public async Task<Post?> GetPostAsync(uint postId)
         {
             var cacheKey = $"post_data:{postId}";
 

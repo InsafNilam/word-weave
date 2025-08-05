@@ -9,7 +9,7 @@ namespace CommentService.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public uint Id { get; set; }
 
         [Required]
         [Column("user_id")]
@@ -18,7 +18,7 @@ namespace CommentService.Models
 
         [Required]
         [Column("post_id")]
-        public int PostId { get; set; }
+        public uint PostId { get; set; }
 
         [Required]
         [Column("description")]

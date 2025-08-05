@@ -149,7 +149,6 @@ impl PostClient {
     }
 }
 
-// Optional: Implement a connection pool for multiple clients
 #[derive(Debug)]
 pub struct PostClientPool {
     clients: Vec<PostClient>,

@@ -420,7 +420,7 @@ namespace CommentService.GrpcServices
                 // Pass to repository to handle conditional deletion
                 bool deletedCount = await _commentRepository.DeleteMultipleAsync(
                     request.UserIds != null ? request.UserIds.ToList() : new List<string>(),
-                    request.PostIds != null ? request.PostIds.ToList() : new List<int>()
+                    request.PostIds != null ? request.PostIds.ToList() : new List<uint>()
                 );
 
                 if (!deletedCount)

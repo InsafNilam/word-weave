@@ -7,14 +7,14 @@ namespace CommentService.Repositories
 {
     public interface ICommentRepository
     {
-        Task<Comment?> GetByIdAsync(int id);
-        Task<(IEnumerable<Comment> Comments, int TotalCount)> GetByPostIdAsync(int postId, int page, int pageSize);
+        Task<Comment?> GetByIdAsync(uint id);
+        Task<(IEnumerable<Comment> Comments, int TotalCount)> GetByPostIdAsync(uint postId, int page, int pageSize);
         Task<(IEnumerable<Comment> Comments, int TotalCount)> GetByUserIdAsync(string userId, int page, int pageSize);
         Task<Comment> CreateAsync(Comment comment);
         Task<Comment?> UpdateAsync(Comment comment);
-        Task<bool> DeleteAsync(int id);
-        Task<int> GetCommentCountByPostIdAsync(int postId);
-        Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<int> postIds);
+        Task<bool> DeleteAsync(uint id);
+        Task<int> GetCommentCountByPostIdAsync(uint postId);
+        Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<uint> postIds);
     }
 
     public class CommentRepository : ICommentRepository
@@ -34,7 +34,7 @@ namespace CommentService.Repositories
             _logger = logger;
         }
 
-        public async Task<Comment?> GetByIdAsync(int id)
+        public async Task<Comment?> GetByIdAsync(uint id)
         {
             var cacheKey = $"comment:{id}";
 
@@ -63,7 +63,7 @@ namespace CommentService.Repositories
             return comment;
         }
 
-        public async Task<(IEnumerable<Comment> Comments, int TotalCount)> GetByPostIdAsync(int postId, int page, int pageSize)
+        public async Task<(IEnumerable<Comment> Comments, int TotalCount)> GetByPostIdAsync(uint postId, int page, int pageSize)
         {
             var cacheKey = $"comments:post:{postId}:page:{page}:size:{pageSize}";
 
@@ -167,7 +167,7 @@ namespace CommentService.Repositories
             return existingComment;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(uint id)
         {
             var comment = await _context.Comments.FindAsync(id);
             if (comment == null)
@@ -185,7 +185,7 @@ namespace CommentService.Repositories
             return true;
         }
 
-        public async Task<int> GetCommentCountByPostIdAsync(int postId)
+        public async Task<int> GetCommentCountByPostIdAsync(uint postId)
         {
             var cacheKey = $"comment_count:post:{postId}";
 
@@ -209,7 +209,7 @@ namespace CommentService.Repositories
             return count;
         }
 
-        public async Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<int> postIds)
+        public async Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<uint> postIds)
         {
             if (userIds == null || !userIds.Any() || postIds == null || !postIds.Any())
                 return false;
@@ -253,7 +253,7 @@ namespace CommentService.Repositories
             }
         }
 
-        private async Task InvalidatePostCommentsCache(int postId)
+        private async Task InvalidatePostCommentsCache(uint postId)
         {
             // In a production environment, you might want to use a pattern-based cache invalidation
             // For now, we'll remove specific keys that we know about

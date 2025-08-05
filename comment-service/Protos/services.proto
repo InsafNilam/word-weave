@@ -24,7 +24,7 @@ message User {
 // Post Service Client
 service PostService { rpc GetPost(GetPostRequest) returns (GetPostResponse); }
 
-message GetPostRequest { int32 post_id = 1; }
+message GetPostRequest { uint32 post_id = 1; }
 
 message GetPostResponse {
   bool success = 1;
@@ -33,7 +33,7 @@ message GetPostResponse {
 }
 
 message Post {
-  int32 id = 1;
+  uint32 id = 1;
   string title = 2;
   string content = 3;
   string user_id = 4;
