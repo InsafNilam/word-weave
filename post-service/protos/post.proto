@@ -19,6 +19,7 @@ service PostService {
   rpc GetPostsByUser(GetPostsByUserRequest) returns (ListPostsResponse);
   rpc SearchPosts(SearchPostsRequest) returns (ListPostsResponse);
   rpc CountPosts(CountPostsRequest) returns (CountPostsResponse);
+  rpc DeletePosts(DeletePostsRequest) returns (DeletePostResponse);
 }
 
 message Post {
@@ -77,6 +78,11 @@ message DeletePostRequest {
 message DeletePostResponse {
   string message = 1;
   bool success = 2;
+}
+
+message DeletePostsRequest {
+  repeated uint32 ids = 1;
+  repeated string user_id = 2;
 }
 
 message ListPostsRequest {

@@ -25,6 +25,8 @@ module Post
       rpc :GetPostsByCategory, ::Post::GetPostsByCategoryRequest, ::Post::ListPostsResponse
       rpc :GetPostsByUser, ::Post::GetPostsByUserRequest, ::Post::ListPostsResponse
       rpc :SearchPosts, ::Post::SearchPostsRequest, ::Post::ListPostsResponse
+      rpc :CountPosts, ::Post::CountPostsRequest, ::Post::CountPostsResponse
+      rpc :DeletePosts, ::Post::DeletePostsRequest, ::Post::DeletePostResponse
     end
 
     Stub = Service.rpc_stub_class

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.31.1
-// source: proto/post.proto
+// source: protos/post.proto
 
 package postpb
 
@@ -31,6 +31,7 @@ const (
 	PostService_GetPostsByUser_FullMethodName     = "/post.PostService/GetPostsByUser"
 	PostService_SearchPosts_FullMethodName        = "/post.PostService/SearchPosts"
 	PostService_CountPosts_FullMethodName         = "/post.PostService/CountPosts"
+	PostService_DeletePosts_FullMethodName        = "/post.PostService/DeletePosts"
 )
 
 // PostServiceClient is the client API for PostService service.
@@ -49,6 +50,7 @@ type PostServiceClient interface {
 	GetPostsByUser(ctx context.Context, in *GetPostsByUserRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	SearchPosts(ctx context.Context, in *SearchPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	CountPosts(ctx context.Context, in *CountPostsRequest, opts ...grpc.CallOption) (*CountPostsResponse, error)
+	DeletePosts(ctx context.Context, in *DeletePostsRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 }
 
 type postServiceClient struct {
@@ -179,6 +181,16 @@ func (c *postServiceClient) CountPosts(ctx context.Context, in *CountPostsReques
 	return out, nil
 }
 
+func (c *postServiceClient) DeletePosts(ctx context.Context, in *DeletePostsRequest, opts ...grpc.CallOption) (*DeletePostResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePostResponse)
+	err := c.cc.Invoke(ctx, PostService_DeletePosts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PostServiceServer is the server API for PostService service.
 // All implementations must embed UnimplementedPostServiceServer
 // for forward compatibility.
@@ -195,6 +207,7 @@ type PostServiceServer interface {
 	GetPostsByUser(context.Context, *GetPostsByUserRequest) (*ListPostsResponse, error)
 	SearchPosts(context.Context, *SearchPostsRequest) (*ListPostsResponse, error)
 	CountPosts(context.Context, *CountPostsRequest) (*CountPostsResponse, error)
+	DeletePosts(context.Context, *DeletePostsRequest) (*DeletePostResponse, error)
 	mustEmbedUnimplementedPostServiceServer()
 }
 
@@ -240,6 +253,9 @@ func (UnimplementedPostServiceServer) SearchPosts(context.Context, *SearchPostsR
 }
 func (UnimplementedPostServiceServer) CountPosts(context.Context, *CountPostsRequest) (*CountPostsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CountPosts not implemented")
+}
+func (UnimplementedPostServiceServer) DeletePosts(context.Context, *DeletePostsRequest) (*DeletePostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePosts not implemented")
 }
 func (UnimplementedPostServiceServer) mustEmbedUnimplementedPostServiceServer() {}
 func (UnimplementedPostServiceServer) testEmbeddedByValue()                     {}
@@ -478,6 +494,24 @@ func _PostService_CountPosts_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PostService_DeletePosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePostsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServiceServer).DeletePosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PostService_DeletePosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServiceServer).DeletePosts(ctx, req.(*DeletePostsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PostService_ServiceDesc is the grpc.ServiceDesc for PostService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -533,7 +567,11 @@ var PostService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "CountPosts",
 			Handler:    _PostService_CountPosts_Handler,
 		},
+		{
+			MethodName: "DeletePosts",
+			Handler:    _PostService_DeletePosts_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/post.proto",
+	Metadata: "protos/post.proto",
 }
