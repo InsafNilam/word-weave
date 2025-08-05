@@ -11,7 +11,8 @@ import (
 	pb "post-service/protos/postpb"
 	"post-service/repository"
 
-	event_client "post-service/clients"
+	event_client "post-service/clients/event_client"
+	user_client "post-service/clients/user_client"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -20,10 +21,11 @@ type PostServiceServer struct {
 	pb.UnimplementedPostServiceServer
 	repo        repository.PostRepository
 	eventClient *event_client.EventServiceClient
+	userClient  *user_client.UserServiceClient
 }
 
-func NewPostServiceServer(repo repository.PostRepository, eventClient *event_client.EventServiceClient) *PostServiceServer {
-	return &PostServiceServer{repo: repo, eventClient: eventClient}
+func NewPostServiceServer(repo repository.PostRepository, eventClient *event_client.EventServiceClient, userClient *user_client.UserServiceClient) *PostServiceServer {
+	return &PostServiceServer{repo: repo, eventClient: eventClient, userClient: userClient}
 }
 
 func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*pb.PostResponse, error) {
@@ -31,6 +33,23 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 	slug := req.Slug
 	if slug == "" {
 		slug = generateSlug(req.Title)
+	}
+
+	// Validate user exists
+	if req.UserId != "" {
+		exists, err := s.userClient.ValidateUser(ctx, req.UserId)
+		if err != nil {
+			return &pb.PostResponse{
+				Success: false,
+				Message: fmt.Sprintf("Failed to validate user: %v", err),
+			}, nil
+		}
+		if !exists {
+			return &pb.PostResponse{
+				Success: false,
+				Message: "User does not exist",
+			}, nil
+		}
 	}
 
 	post := &models.Post{

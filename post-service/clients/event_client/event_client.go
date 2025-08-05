@@ -1,4 +1,4 @@
-package event_client
+package clients
 
 import (
 	"context"

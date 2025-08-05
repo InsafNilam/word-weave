@@ -11,7 +11,7 @@ type Config struct {
 	DBPassword          string
 	DBName              string
 	GRPCPort            string
-	UserServiceAddr     string
+	UserServiceAddress  string
 	EventServiceAddress string
 }
 
@@ -23,7 +23,7 @@ func LoadConfig() *Config {
 		DBPassword:          getEnv("DB_PASSWORD", "47@n2EEr"),
 		DBName:              getEnv("DB_NAME", "post_service"),
 		GRPCPort:            getEnv("GRPC_PORT", "50052"),
-		UserServiceAddr:     getEnv("USER_SERVICE_ADDR", "localhost:50052"),
+		UserServiceAddress:  getEnv("USER_SERVICE_ADDRESS", "localhost:50052"),
 		EventServiceAddress: getEnv("EVENT_SERVICE_ADDRESS", "localhost:50055"),
 	}
 }

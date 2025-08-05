@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package post;
+
+service PostService { rpc GetPost(GetPostRequest) returns (GetPostResponse); }
+
+message GetPostRequest { uint32 post_id = 1; }
+
+message GetPostResponse {
+  bool success = 1;
+  string message = 2;
+  Post post = 3;
+}
+
+message Post {
+  uint32 id = 1;
+  string title = 2;
+  string content = 3;
+  string user_id = 4;
+}

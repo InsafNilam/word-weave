@@ -16,17 +16,23 @@ impl LikesRepository {
         Self { db }
     }
 
-    pub async fn create_like(&self, user_id: &str, post_id: &str) -> Result<Like> {
+    pub async fn create_like(&self, user_id: &str, post_id: &u32) -> Result<Like> {
         debug!("Creating like for user {} on post {}", user_id, post_id);
 
         // Validate input
-        if user_id.is_empty() || post_id.is_empty() {
+        if user_id.is_empty() {
             return Err(LikesError::InvalidInput(
-                "User ID and Post ID cannot be empty".to_string(),
+                "User ID cannot be empty".to_string(),
             ));
         }
 
-        let like = Like::new(user_id.to_string(), post_id.to_string());
+        if *post_id <= 0 {
+            return Err(LikesError::InvalidInput(
+                "Post ID must be a positive integer".to_string(),
+            ));
+        }
+
+        let like = Like::new(user_id.to_string(), post_id.clone());
 
         let query = r#"
             CREATE likes SET 
@@ -62,7 +68,7 @@ impl LikesRepository {
         created_like.ok_or_else(|| LikesError::Internal("Failed to create like".to_string()))
     }
 
-    pub async fn delete_like(&self, user_id: &str, post_id: &str) -> Result<bool> {
+    pub async fn delete_like(&self, user_id: &str, post_id: &u32) -> Result<bool> {
         debug!("Deleting like for user {} on post {}", user_id, post_id);
 
         let query = r#"
@@ -74,7 +80,7 @@ impl LikesRepository {
             .client
             .query(query)
             .bind(("user_id", user_id.to_string()))
-            .bind(("post_id", post_id.to_string()))
+            .bind(("post_id", *post_id))
             .await
             .map_err(LikesError::Database)?;
 
@@ -131,7 +137,7 @@ impl LikesRepository {
 
     pub async fn get_post_likes(
         &self,
-        post_id: &str,
+        post_id: &u32,
         params: &PaginationParams,
     ) -> Result<PaginatedResult<Like>> {
         debug!(
@@ -145,7 +151,7 @@ impl LikesRepository {
             .db
             .client
             .query(count_query)
-            .bind(("post_id", post_id.to_string()))
+            .bind(("post_id", *post_id))
             .await
             .map_err(LikesError::Database)?;
 
@@ -165,7 +171,7 @@ impl LikesRepository {
             .db
             .client
             .query(data_query)
-            .bind(("post_id", post_id.to_string()))
+            .bind(("post_id", *post_id))
             .bind(("limit", params.limit))
             .bind(("offset", params.offset()))
             .await
@@ -179,7 +185,7 @@ impl LikesRepository {
     pub async fn is_post_liked(
         &self,
         user_id: &str,
-        post_id: &str,
+        post_id: &u32,
     ) -> Result<Option<DateTime<Utc>>> {
         debug!("Checking if user {} likes post {}", user_id, post_id);
 
@@ -194,7 +200,7 @@ impl LikesRepository {
             .client
             .query(query)
             .bind(("user_id", user_id.to_string()))
-            .bind(("post_id", post_id.to_string()))
+            .bind(("post_id", *post_id))
             .await
             .map_err(LikesError::Database)?;
 
@@ -202,7 +208,7 @@ impl LikesRepository {
         Ok(like.map(|l| l.liked_at))
     }
 
-    pub async fn get_likes_count(&self, post_id: &str) -> Result<i64> {
+    pub async fn get_likes_count(&self, post_id: &u32) -> Result<i64> {
         debug!("Getting likes count for post {}", post_id);
 
         let query = "SELECT count() FROM likes WHERE post_id = $post_id GROUP ALL;";
@@ -210,7 +216,7 @@ impl LikesRepository {
             .db
             .client
             .query(query)
-            .bind(("post_id", post_id.to_string()))
+            .bind(("post_id", *post_id))
             .await
             .map_err(LikesError::Database)?;
 
@@ -218,7 +224,7 @@ impl LikesRepository {
         Ok(count_data.and_then(|v| v["count"].as_i64()).unwrap_or(0))
     }
 
-    pub async fn unlike_posts(&self, user_ids: &[String], post_ids: &[String]) -> Result<bool> {
+    pub async fn unlike_posts(&self, user_ids: &[String], post_ids: &[u32]) -> Result<bool> {
         debug!(
             "Unliking posts for {} users on {} posts",
             user_ids.len(),

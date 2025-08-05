@@ -8,7 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	event_client "post-service/clients"
+	event_client "post-service/clients/event_client"
+	user_client "post-service/clients/user_client"
+
 	"post-service/config"
 	"post-service/protos/postpb"
 	"post-service/repository"
@@ -27,16 +29,24 @@ func StartGRPCServer(cfg *config.Config, db *gorm.DB) {
 	if err != nil {
 		log.Fatalf("Failed to initialize event service client: %v", err)
 	}
-
-	// Ensure event client is closed when server shuts down
 	defer func() {
 		if err := eventClient.Close(); err != nil {
 			log.Printf("Error closing event client: %v", err)
 		}
 	}()
 
+	userClient, err := user_client.NewUserServiceClient(cfg.UserServiceAddress)
+	if err != nil {
+		log.Fatalf("Failed to initialize user service client: %v", err)
+	}
+	defer func() {
+		if err := userClient.Close(); err != nil {
+			log.Printf("Error closing user client: %v", err)
+		}
+	}()
+
 	// Initialize service
-	postService := service.NewPostServiceServer(postRepo, eventClient)
+	postService := service.NewPostServiceServer(postRepo, eventClient, userClient)
 
 	// Create gRPC server
 	grpcServer := grpc.NewServer()

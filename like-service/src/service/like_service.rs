@@ -1,4 +1,5 @@
 use crate::{
+    clients::{PostClient, UserClient},
     models::PaginationParams,
     proto::{likes_service_server::LikesService, *},
     repository::LikesRepository,
@@ -9,21 +10,54 @@ use tracing::{debug, error, info};
 #[derive(Debug)]
 pub struct LikesServiceImpl {
     repository: LikesRepository,
+    user_client: UserClient,
+    post_client: PostClient,
 }
 
 impl LikesServiceImpl {
-    pub fn new(repository: LikesRepository) -> Self {
-        Self { repository }
+    pub fn new(
+        repository: LikesRepository,
+        user_client: UserClient,
+        post_client: PostClient,
+    ) -> Self {
+        Self {
+            repository,
+            user_client,
+            post_client,
+        }
     }
 
-    fn validate_ids(user_id: &str, post_id: &str) -> Result<(), Status> {
+    fn validate_ids(user_id: &str, post_id: &u32) -> Result<(), Status> {
         if user_id.trim().is_empty() {
             return Err(Status::invalid_argument("User ID cannot be empty"));
         }
-        if post_id.trim().is_empty() {
-            return Err(Status::invalid_argument("Post ID cannot be empty"));
+
+        if *post_id == 0 {
+            return Err(Status::invalid_argument("Post ID must be greater than 0"));
         }
+
         Ok(())
+    }
+
+    async fn validate_user(&mut self, user_id: &str) -> Result<bool, Status> {
+        match self.user_client.user_exists(user_id.to_string()).await {
+            Ok(exists) => Ok(exists),
+            Err(e) => {
+                error!("Failed to validate user {}: {}", user_id, e);
+                Err(Status::internal("Failed to validate user"))
+            }
+        }
+    }
+
+    // Helper method to validate if post exists
+    async fn validate_post(&mut self, post_id: u32) -> Result<bool, Status> {
+        match self.post_client.post_exists(post_id).await {
+            Ok(exists) => Ok(exists),
+            Err(e) => {
+                error!("Failed to validate post {}: {}", post_id, e);
+                Err(Status::internal("Failed to validate post"))
+            }
+        }
     }
 
     fn datetime_to_timestamp(dt: chrono::DateTime<chrono::Utc>) -> prost_types::Timestamp {
@@ -47,6 +81,37 @@ impl LikesService for LikesServiceImpl {
         );
 
         Self::validate_ids(&req.user_id, &req.post_id)?;
+
+        // Clone the clients to make them mutable for this call
+        let mut user_client = self.user_client.clone();
+        let mut post_client = self.post_client.clone();
+
+        // Validate user exists before allowing them to like a post
+        // Validate user exists before allowing them to like a post
+        if !user_client
+            .user_exists(req.user_id.clone())
+            .await
+            .map_err(|e| Status::internal(format!("User validation failed: {}", e)))?
+        {
+            return Ok(Response::new(LikePostResponse {
+                success: false,
+                message: "User not found".to_string(),
+                liked_at: None,
+            }));
+        }
+
+        // Validate post exists before allowing it to be liked
+        if !post_client
+            .post_exists(req.post_id)
+            .await
+            .map_err(|e| Status::internal(format!("Post validation failed: {}", e)))?
+        {
+            return Ok(Response::new(LikePostResponse {
+                success: false,
+                message: "Post not found".to_string(),
+                liked_at: None,
+            }));
+        }
 
         match self
             .repository
@@ -166,8 +231,10 @@ impl LikesService for LikesServiceImpl {
             req.post_id, req.page, req.limit
         );
 
-        if req.post_id.trim().is_empty() {
-            return Err(Status::invalid_argument("Post ID cannot be empty"));
+        if req.post_id <= 0 {
+            return Err(Status::invalid_argument(
+                "Post ID must be a positive integer",
+            ));
         }
 
         let params = PaginationParams::new(req.page, req.limit);
@@ -235,8 +302,10 @@ impl LikesService for LikesServiceImpl {
         let req = request.into_inner();
         debug!("Get likes count request: post_id={}", req.post_id);
 
-        if req.post_id.trim().is_empty() {
-            return Err(Status::invalid_argument("Post ID cannot be empty"));
+        if req.post_id <= 0 {
+            return Err(Status::invalid_argument(
+                "Post ID must be a positive integer",
+            ));
         }
 
         match self.repository.get_likes_count(&req.post_id).await {
@@ -274,8 +343,10 @@ impl LikesService for LikesServiceImpl {
 
         // Validate post IDs
         for post_id in &req.post_ids {
-            if post_id.trim().is_empty() {
-                return Err(Status::invalid_argument("Post ID cannot be empty"));
+            if *post_id <= 0 {
+                return Err(Status::invalid_argument(
+                    "Post ID must be a positive integer",
+                ));
             }
         }
 

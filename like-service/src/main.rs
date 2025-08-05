@@ -1,3 +1,4 @@
+mod clients;
 mod config;
 mod database;
 mod error;
@@ -13,12 +14,22 @@ use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
-    config::Config, database::Database, repository::LikesRepository, service::LikesServiceImpl,
+    clients::{PostClient, UserClient},
+    config::Config,
+    database::Database,
+    repository::LikesRepository,
+    service::LikesServiceImpl,
 };
 
 // Include the generated gRPC code
 pub mod proto {
     tonic::include_proto!("like");
+    pub mod user {
+        tonic::include_proto!("user");
+    }
+    pub mod post {
+        tonic::include_proto!("post");
+    }
 }
 
 #[tokio::main]
@@ -40,11 +51,19 @@ async fn main() -> Result<()> {
     let database = Database::new(&config.database_url).await?;
     info!("Connected to SurrealDB");
 
+    // Initialize user client
+    let user_client = UserClient::new(config.user_service_url).await?;
+    info!("Connected to User Service");
+
+    // Initialize post client
+    let post_client = PostClient::new(config.post_service_url).await?;
+    info!("Connected to Post Service");
+
     // Initialize repository
     let repository = LikesRepository::new(database);
 
     // Initialize service
-    let likes_service = LikesServiceImpl::new(repository);
+    let likes_service = LikesServiceImpl::new(repository, user_client, post_client);
 
     // Build server address
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;

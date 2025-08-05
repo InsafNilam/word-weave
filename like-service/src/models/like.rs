@@ -6,14 +6,14 @@ use uuid::Uuid;
 pub struct Like {
     pub id: Option<String>,
     pub user_id: String,
-    pub post_id: String,
+    pub post_id: u32,
     pub liked_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 impl Like {
-    pub fn new(user_id: String, post_id: String) -> Self {
+    pub fn new(user_id: String, post_id: u32) -> Self {
         let now = Utc::now();
         Self {
             id: Some(Uuid::new_v4().to_string()),
@@ -28,7 +28,7 @@ impl Like {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LikeCount {
-    pub post_id: String,
+    pub post_id: u32,
     pub count: i64,
 }
 
