@@ -617,7 +617,7 @@ func (x *DeletePostResponse) GetSuccess() bool {
 type DeletePostsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ids           []uint32               `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
-	UserId        []string               `protobuf:"bytes,2,rep,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserIds       []string               `protobuf:"bytes,2,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -659,9 +659,9 @@ func (x *DeletePostsRequest) GetIds() []uint32 {
 	return nil
 }
 
-func (x *DeletePostsRequest) GetUserId() []string {
+func (x *DeletePostsRequest) GetUserIds() []string {
 	if x != nil {
-		return x.UserId
+		return x.UserIds
 	}
 	return nil
 }
@@ -1255,10 +1255,10 @@ const file_protos_post_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"H\n" +
 	"\x12DeletePostResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x18\n" +
-	"\asuccess\x18\x02 \x01(\bR\asuccess\"?\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\"A\n" +
 	"\x12DeletePostsRequest\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\rR\x03ids\x12\x17\n" +
-	"\auser_id\x18\x02 \x03(\tR\x06userId\"q\n" +
+	"\x03ids\x18\x01 \x03(\rR\x03ids\x12\x19\n" +
+	"\buser_ids\x18\x02 \x03(\tR\auserIds\"q\n" +
 	"\x10ListPostsRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\rR\x04page\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\rR\x05limit\x12\x1a\n" +

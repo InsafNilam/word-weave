@@ -365,6 +365,86 @@ func (s *PostServiceServer) GetPostsByUser(ctx context.Context, req *pb.GetPosts
 	}, nil
 }
 
+func (s *PostServiceServer) SearchPosts(ctx context.Context, req *pb.SearchPostsRequest) (*pb.ListPostsResponse, error) {
+	page := int(req.Page)
+	limit := int(req.Limit)
+
+	if page <= 0 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	posts, total, err := s.repo.SearchPosts(req.Query, page, limit)
+	if err != nil {
+		return &pb.ListPostsResponse{
+			Success: false,
+		}, nil
+	}
+
+	protoPosts := make([]*pb.Post, len(posts))
+	for i, post := range posts {
+		protoPosts[i] = s.modelToProto(&post)
+	}
+
+	return &pb.ListPostsResponse{
+		Posts:   protoPosts,
+		Total:   uint32(total),
+		Page:    uint32(page),
+		Limit:   uint32(limit),
+		Success: true,
+	}, nil
+}
+
+func (s *PostServiceServer) CountPosts(ctx context.Context, req *pb.CountPostsRequest) (*pb.CountPostsResponse, error) {
+	count, err := s.repo.CountPosts(req.UserId, req.Category, req.IsFeatured)
+	if err != nil {
+		return &pb.CountPostsResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to count posts: %v", err),
+		}, nil
+	}
+
+	return &pb.CountPostsResponse{
+		Total:   uint32(count),
+		Success: true,
+	}, nil
+}
+
+func (s *PostServiceServer) DeletePosts(ctx context.Context, req *pb.DeletePostsRequest) (*pb.DeletePostResponse, error) {
+	err := s.repo.DeletePosts(req.Ids, req.UserIds)
+	if err != nil {
+		return &pb.DeletePostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to delete posts: %v", err),
+		}, nil
+	}
+
+	// 📤 Publish domain event for each deleted post
+	for _, id := range req.Ids {
+		_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
+			AggregateId:   fmt.Sprintf("%d", id),
+			AggregateType: "post",
+			EventType:     "post.deleted",
+			EventData:     fmt.Sprintf(`{"id":%d,"userId":"%s"}`, id, req.UserIds),
+			Metadata:      fmt.Sprintf(`{"user_id":"%s","deleted_at":"%s"}`, req.UserIds, time.Now().UTC().Format(time.RFC3339)),
+		})
+
+		if err != nil {
+			fmt.Printf("⚠️ Failed to publish delete event for post %d: %v\n", id, err)
+		}
+	}
+
+	return &pb.DeletePostResponse{
+		Success: true,
+		Message: "Posts deleted successfully",
+	}, nil
+}
+
 // Helper function to convert model to proto
 func (s *PostServiceServer) modelToProto(post *models.Post) *pb.Post {
 	return &pb.Post{

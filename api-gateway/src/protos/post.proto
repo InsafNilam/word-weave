@@ -82,7 +82,7 @@ message DeletePostResponse {
 
 message DeletePostsRequest {
   repeated uint32 ids = 1;
-  repeated string user_id = 2;
+  repeated string user_ids = 2;
 }
 
 message ListPostsRequest {

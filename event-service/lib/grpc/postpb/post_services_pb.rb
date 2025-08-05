@@ -2,7 +2,7 @@
 # Source: post.proto for package 'post'
 
 require 'grpc'
-require_relative 'post_pb'
+require 'post_pb'
 
 module Post
   module PostService

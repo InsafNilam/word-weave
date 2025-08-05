@@ -19,6 +19,9 @@ type PostRepository interface {
 	GetFeatured(limit int) ([]models.Post, error)
 	GetByCategory(category string, page, limit int) ([]models.Post, int64, error)
 	GetByUser(userID string, page, limit int) ([]models.Post, int64, error)
+	SearchPosts(query string, page int, limit int) ([]models.Post, int64, error)
+	CountPosts(user_id, category string, is_featured bool) (int64, error)
+	DeletePosts(ids []uint32, userIds []string) error
 }
 
 type postRepository struct {
@@ -184,4 +187,19 @@ func (r *postRepository) CountPosts(user_id, category string, is_featured bool) 
 	}
 
 	return count, nil
+}
+
+func (r *postRepository) DeletePosts(ids []uint32, userIds []string) error {
+	if len(ids) == 0 || len(userIds) == 0 {
+		return errors.New("ids and userIds cannot be empty")
+	}
+
+	result := r.db.Where("id IN ? AND user_id IN ?", ids, userIds).Delete(&models.Post{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("no posts found for the given ids and userIds")
+	}
+	return nil
 }
