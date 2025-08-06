@@ -46,14 +46,14 @@ impl LikesRepository {
 
         let mut result = self
             .db
-            .client
-            .query(query)
-            .bind(("id", like.id.clone()))
-            .bind(("user_id", like.user_id.clone()))
-            .bind(("post_id", like.post_id.clone()))
-            .bind(("liked_at", like.liked_at))
-            .bind(("created_at", like.created_at))
-            .bind(("updated_at", like.updated_at))
+            .query_builder(query)
+            .bind("id", like.id.clone())
+            .bind("user_id", like.user_id.clone())
+            .bind("post_id", like.post_id.clone())
+            .bind("liked_at", like.liked_at)
+            .bind("created_at", like.created_at)
+            .bind("updated_at", like.updated_at)
+            .execute()
             .await
             .map_err(|e| {
                 error!("Failed to create like: {}", e);
@@ -77,10 +77,10 @@ impl LikesRepository {
 
         let mut result = self
             .db
-            .client
-            .query(query)
-            .bind(("user_id", user_id.to_string()))
-            .bind(("post_id", *post_id))
+            .query_builder(query)
+            .bind("user_id", user_id.to_string())
+            .bind("post_id", *post_id)
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -102,9 +102,9 @@ impl LikesRepository {
         let count_query = "SELECT count() FROM likes WHERE user_id = $user_id GROUP ALL;";
         let mut count_result = self
             .db
-            .client
-            .query(count_query)
-            .bind(("user_id", user_id.to_string()))
+            .query_builder(count_query)
+            .bind("user_id", user_id.to_string())
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -122,11 +122,11 @@ impl LikesRepository {
 
         let mut data_result = self
             .db
-            .client
-            .query(data_query)
-            .bind(("user_id", user_id.to_string()))
-            .bind(("limit", params.limit))
-            .bind(("offset", params.offset()))
+            .query_builder(data_query)
+            .bind("user_id", user_id.to_string())
+            .bind("limit", params.limit)
+            .bind("offset", params.offset())
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -149,9 +149,9 @@ impl LikesRepository {
         let count_query = "SELECT count() FROM likes WHERE post_id = $post_id GROUP ALL;";
         let mut count_result = self
             .db
-            .client
-            .query(count_query)
-            .bind(("post_id", *post_id))
+            .query_builder(count_query)
+            .bind("post_id", *post_id)
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -169,11 +169,11 @@ impl LikesRepository {
 
         let mut data_result = self
             .db
-            .client
-            .query(data_query)
-            .bind(("post_id", *post_id))
-            .bind(("limit", params.limit))
-            .bind(("offset", params.offset()))
+            .query_builder(data_query)
+            .bind("post_id", *post_id)
+            .bind("limit", params.limit)
+            .bind("offset", params.offset())
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -197,10 +197,10 @@ impl LikesRepository {
 
         let mut result = self
             .db
-            .client
-            .query(query)
-            .bind(("user_id", user_id.to_string()))
-            .bind(("post_id", *post_id))
+            .query_builder(query)
+            .bind("user_id", user_id.to_string())
+            .bind("post_id", *post_id)
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -214,9 +214,9 @@ impl LikesRepository {
         let query = "SELECT count() FROM likes WHERE post_id = $post_id GROUP ALL;";
         let mut result = self
             .db
-            .client
-            .query(query)
-            .bind(("post_id", *post_id))
+            .query_builder(query)
+            .bind("post_id", *post_id)
+            .execute()
             .await
             .map_err(LikesError::Database)?;
 
@@ -253,16 +253,19 @@ impl LikesRepository {
         query.push_str(&format!(" {}", conditions.join(" AND ")));
         query.push(';');
 
-        let mut query_builder = self.db.client.query(query);
+        let mut query_builder = self.db.query_builder(&query);
 
         if !user_ids.is_empty() {
-            query_builder = query_builder.bind(("user_ids", user_ids.to_vec()));
+            query_builder = query_builder.bind("user_ids", user_ids.to_vec());
         }
         if !post_ids.is_empty() {
-            query_builder = query_builder.bind(("post_ids", post_ids.to_vec()));
+            query_builder = query_builder.bind("post_ids", post_ids.to_vec());
         }
 
-        let mut result = query_builder.await.map_err(LikesError::Database)?;
+        let mut result = query_builder
+            .execute()
+            .await
+            .map_err(LikesError::Database)?;
 
         let deleted: Vec<Like> = result.take(0)?;
         Ok(!deleted.is_empty())
