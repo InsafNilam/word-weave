@@ -14,5 +14,5 @@ export default defineConfig({
     alias: {
       "@": root, // Map @ to ./src
     },
-  },
+  }
 })

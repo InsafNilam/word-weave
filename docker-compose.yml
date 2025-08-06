@@ -1,27 +1,33 @@
 services:
-  # PostgreSQL Database for Post Service
+  # PostgreSQL Database for Post Service and Event Service
   post-db:
     image: postgres:17.5-alpine
     container_name: post-db
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_DB: postgres
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     restart: always
     volumes:
       - post_db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5432"
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d postgres'"]
       interval: 10s
       timeout: 5s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # SurrealDB for Like Service
-  like_db:
+  like-db:
     image: surrealdb/surrealdb:v2.3.7
     container_name: like-db
     env_file:
@@ -36,12 +42,12 @@ services:
       - $SURREAL_DB_USER
       - --pass
       - $SURREAL_DB_PASSWORD
-      - rocksdb:/data/likes.db
+      - $SURREAL_DATABASE_URL
     restart: always
     volumes:
       - like_db_data:/data
     ports:
-      - "8000:8000"
+      - "8000"
     networks:
       - microservices-network
     healthcheck:
@@ -49,6 +55,12 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # MongoDB for User Service
   user-db:
@@ -61,7 +73,7 @@ services:
     volumes:
       - user_db_data:/data/db
     ports:
-      - "27017:27017"
+      - "27017"
     networks:
       - microservices-network
     healthcheck:
@@ -69,7 +81,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+  
+  # MySQL Database for Comment Service
   comment-db:
     image: mysql:8.4.6
     container_name: comment-db
@@ -78,7 +97,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
-     - "3306:3306"
+     - "3306"
     volumes:
       - comment_db_data:/var/lib/mysql
     networks:
@@ -89,38 +108,59 @@ services:
       timeout: 30s
       retries: 3
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
-    redis:
-      image: redis:7.4.5-alpine
-      container_name: redis
-      restart: always
-      ports:
-        - "6379:6379"
-      command: ["redis-server", "--appendonly", "yes"]
-      volumes:
-        - redis_data:/data
-      networks:
-        - microservices-network
-      healthcheck:
-        test: ["CMD", "redis-cli", "ping"]
-        interval: 10s
-        timeout: 5s
-        retries: 3
+  redis:
+    image: redis:7.4.5-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - "6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
   
-    rabbitmq:
-      image: rabbitmq:4-management
-      container_name: rabbitmq
-      restart: always
-      ports:
-        - "5672:5672"
-        - "15672:15672"
-      networks:
-        - microservices-network
-      healthcheck:
-        test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-        interval: 30s
-        timeout: 10s
-        retries: 3
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+    - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+    - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+    ports:
+      - "5672"
+      - "15672:15672"
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   # Word Weave Frontend
   word-weave:
@@ -138,6 +178,12 @@ services:
     networks:
       - microservices-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # API Gateway
   api-gateway:
@@ -147,14 +193,14 @@ services:
     container_name: api-gateway
     environment:
       - PORT=${API_PORT}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - POST_SERVICE_ADDR=${POST_SERVICE_ADDR}
       - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
       - LIKE_SERVICE_ADDR=${LIKE_SERVICE_ADDR}
       - COMMENT_SERVICE_ADDR=${COMMENT_SERVICE_ADDR}
       - EVENT_SERVICE_ADDR=${EVENT_SERVICE_ADDR}
       - MEDIA_SERVICE_ADDR=${MEDIA_SERVICE_ADDR}
-      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
     ports:
       - "8080:8080"
     depends_on:
@@ -162,9 +208,23 @@ services:
       - post-service
       - like-service
       - comment-service
+      - event_service
+      - media-service
     networks:
       - microservices-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
   
   # User Service
   user-service:
@@ -183,10 +243,25 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - EVENT_SERVICE_HOST=${EVENT_SERVICE_ADDR}
     ports:
-      - "50051:50051"
+      - "50051"
+    depends_on:
+      user-db:
+        condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   # Post Service
   post-service:
@@ -201,16 +276,28 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_NAME=post_db
       - GRPC_PORT=50052
-      - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
+      - USER_SERVICE_ADDRESS=${USER_SERVICE_ADDR}
       - EVENT_SERVICE_ADDRESS=${EVENT_SERVICE_ADDR}
     ports:
-      - "50052:50052"
+      - "50052"
     depends_on:
       post-db:
         condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:50052"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
   
   # Like Service
   like-service:
@@ -219,19 +306,34 @@ services:
       dockerfile: Dockerfile
     container_name: like-service
     environment:
-      - SURREAL_DB_USER=${SURREAL_DB_USER}
-      - SURREAL_DB_PASSWORD=${SURREAL_DB_PASSWORD}
+      - DB_USER=${SURREAL_DB_USER}
+      - DB_PASSWORD=${SURREAL_DB_PASSWORD}
+      - DATABASE_URL=ws://like_db:8000
       - SURREAL_HEALTH_CHECK_URL=http://like-db:8000/health
-      - DATABASE_URL=${DATABASE_URL}
-      - GRPC_PORT=50053
+      - USER_SERVICE_URL=${USER_SERVICE_ADDR}
+      - POST_SERVICE_URL=${POST_SERVICE_ADDR}
+      - HOST=0.0.0.0
+      - PORT=50053
     ports:
-      - "50053:50053"
+      - "50053"
     depends_on:
       like-db:
         condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:50053"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # Comment Service
   comment-service:
@@ -247,62 +349,141 @@ services:
       - GRPCSETTINGS__EVENTSERVICEURL=${EVENT_SERVICE_ADDR}
       - KESTREL__ENDPOINTS__GRPC__URL=${COMMENT_SERVICE_ADDR}
     ports:
-      - "50054:50054"
+      - "50054"
     depends_on:
-      post-db:
+      comment-db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:50054"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
   
   event_service:
-    build: .
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_db
-      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      DB_HOST: post-db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: event_db
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: 50051
+      POST_SERVICE_HOST: post-service
+      POST_SERVICE_PORT: 50052
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${EVENT_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
       GRPC_PORT: 50055
     ports:
-      - "50055:50055"
+      - "50055"
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      post-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     command: bin/server
+    healthcheck:
+      test: ["CMD", "grpc-health-probe", "-addr=:50055"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
   event_consumer:
-    build: .
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_service
-      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      DB_HOST: post-db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: event_db
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: 50051
+      POST_SERVICE_HOST: post-service
+      POST_SERVICE_PORT: 50052
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${EVENT_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      GRPC_PORT: 50055
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - event_service
+      post-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     command: bin/consumer
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   dead_letter_handler:
-    build: .
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgres://postgres:47%40n2EEr@postgres:5432/event_service
-      RABBITMQ_URL: amqp://admin:password@rabbitmq:5672
+      DB_HOST: post-db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: event_db
+      USER_SERVICE_HOST: user-service
+      USER_SERVICE_PORT: 50051
+      POST_SERVICE_HOST: post-service
+      POST_SERVICE_PORT: 50052
       REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${EVENT_DATABASE_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
-      - event_service
+      post-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     command: bin/dead_letter_handler
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   media-service:
     build:
-      context: .
-      dockerfile: docker/Dockerfile
+      context: ./media-service
+      dockerfile: Dockerfile
     container_name: media-service
     ports:
-      - "50051:50051"
+      - "50056"
     environment:
       # ImageKit Configuration
       - IK_PRIVATE_KEY=${IMAGEKIT_PRIVATE_KEY}
@@ -310,7 +491,7 @@ services:
       - IK_URL_ENDPOINT=${IMAGEKIT_URL_ENDPOINT}
       
       # gRPC Configuration
-      - GRPC_PORT=50051
+      - GRPC_PORT=50056
       - GRPC_HOST=0.0.0.0
       - MAX_WORKERS=10
       
@@ -327,13 +508,19 @@ services:
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import grpc; channel = grpc.insecure_channel('localhost:50051'); channel.close()"]
+      test: ["CMD", "grpc-health-probe", "-addr=:50056"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
     networks:
       - microservices-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
 volumes:
   post_db_data:
@@ -345,6 +532,8 @@ volumes:
   comment_db_data:
     driver: local
   redis_data:
+    driver: local
+  rabbitmq_data:
     driver: local
 
 networks:

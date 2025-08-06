@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     imagekit_url_endpoint: str = Field(..., env="IK_URL_ENDPOINT")
     
     # gRPC Server Configuration
-    grpc_port: int = Field(50051, env="GRPC_PORT")
+    grpc_port: int = Field(50056, env="GRPC_PORT")
     grpc_host: str = Field("0.0.0.0", env="GRPC_HOST")
     max_workers: int = Field(10, env="MAX_WORKERS")
     

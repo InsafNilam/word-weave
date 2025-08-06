@@ -1,17 +1,27 @@
 # -------- Build Stage --------
-FROM rust:1.88-alpine as builder
+FROM rust:1.88-alpine AS builder
 
-# Install build dependencies for Rust + Protobuf + OpenSSL
+# Install build dependencies
 RUN apk add --no-cache \
     clang \
+    clang-dev \
+    clang-static \
+    llvm-dev \
+    llvm-static \
     lld \
     musl-dev \
     openssl-dev \
+    openssl-libs-static \
     protobuf-dev \
     protoc \
     git \
     pkgconfig \
     build-base
+
+# Set environment variables for static linking
+ENV LIBCLANG_PATH=/usr/lib/llvm20/lib
+ENV BINDGEN_EXTRA_CLANG_ARGS="-I/usr/include"
+ENV RUSTFLAGS="-C target-feature=-crt-static"
 
 # Set working directory
 WORKDIR /app
@@ -23,7 +33,6 @@ RUN rm -rf src
 
 # Copy source and build
 COPY build.rs ./
-COPY proto/ proto/
 COPY src/ src/
 RUN cargo build --release && strip target/release/server
 
@@ -34,7 +43,7 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     libssl3 \
-    netcat \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
