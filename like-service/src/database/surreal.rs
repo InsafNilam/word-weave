@@ -23,12 +23,17 @@ pub struct Database {
 impl Database {
     pub async fn new(database_url: &str) -> Result<Self> {
         info!("Connecting to database: {}", database_url);
+        println!("Connecting to database: {}", database_url);
 
         let client = if database_url.starts_with("ws://") || database_url.starts_with("wss://") {
             // Remote SurrealDB connection (Docker)
             info!("Connecting to remote SurrealDB instance: {}", database_url);
+            let url = database_url
+                .strip_prefix("ws://")
+                .or_else(|| database_url.strip_prefix("wss://"))
+                .unwrap_or(database_url);
 
-            let surreal_client = Surreal::new::<Ws>(database_url)
+            let surreal_client = Surreal::new::<Ws>(url)
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to connect to SurrealDB: {}", e))?;
 
