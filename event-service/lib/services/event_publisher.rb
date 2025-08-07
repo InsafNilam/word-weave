@@ -104,8 +104,6 @@ module EventService
       exchange_configs = [
         { name: 'user.events', type: :topic, durable: true },
         { name: 'post.events', type: :topic, durable: true },
-        { name: 'comment.events', type: :topic, durable: true },
-        { name: 'like.events', type: :topic, durable: true }
       ]
 
       exchange_configs.each do |config|

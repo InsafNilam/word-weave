@@ -19,7 +19,7 @@ const packageDef = protoLoader.loadSync(PROTO_PATH, {
 
 const proto = grpc.loadPackageDefinition(packageDef).event;
 
-export const eventClient = new proto.EventsService(
+export const eventClient = new proto.EventService(
   process.env.EVENT_SERVICE_HOST || "event-service:50055",
   grpc.credentials.createInsecure()
 );

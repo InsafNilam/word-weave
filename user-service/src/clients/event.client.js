@@ -1,6 +1,12 @@
-const grpc = require("@grpc/grpc-js");
-const protoLoader = require("@grpc/proto-loader");
-const path = require("path");
+import dotenv from "dotenv";
+dotenv.config();
+
+import grpc from "@grpc/grpc-js";
+import protoLoader from "@grpc/proto-loader";
+import { fileURLToPath } from "url";
+import path from "path";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 class EventServiceClient {
   constructor(serverAddress = "event-service:50055") {
@@ -141,4 +147,4 @@ class EventServiceClient {
   }
 }
 
-module.exports = EventServiceClient;
+export default EventServiceClient;

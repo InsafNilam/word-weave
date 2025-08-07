@@ -15,8 +15,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 
-# Expose gRPC port (default 5000)
-EXPOSE 5000
+# Expose gRPC port (default 50054)
+EXPOSE 50054
 
 # Start the ASP.NET Core gRPC service
 ENTRYPOINT ["dotnet", "CommentService.dll"]

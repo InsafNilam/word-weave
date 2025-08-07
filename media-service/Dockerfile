@@ -1,5 +1,23 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim as base
+# Build stage for gRPC code generation
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Install grpcio-tools for protoc
+RUN pip install --no-cache-dir grpcio-tools
+
+# Copy proto files and generate gRPC code
+COPY proto/ ./proto/
+RUN mkdir -p generated \
+    && python -m grpc_tools.protoc \
+    -I./proto \
+    --python_out=./generated \
+    --grpc_python_out=./generated \
+    ./proto/media.proto \
+    && sed -i 's/import media_pb2/from . import media_pb2/g' generated/media_pb2_grpc.py
+
+# Production stage
+FROM python:3.11-slim AS production
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,9 +27,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user
@@ -20,25 +36,16 @@ RUN groupadd -r appuser && useradd -r -g appuser appuser
 # Set work directory
 WORKDIR /app
 
-# Copy requirements first (for better caching)
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Copy generated gRPC code from builder
+COPY --from=builder /build/generated ./src/generated
+
 # Copy application code
-COPY . .
-
-# Generate gRPC code
-RUN python -m grpc_tools.protoc \
-    -I./proto \
-    --python_out=./src/generated \
-    --grpc_python_out=./src/generated \
-    ./proto/media.proto
-
-# Fix import paths in generated files
-RUN sed -i 's/import media_pb2/from . import media_pb2/g' src/generated/media_pb2_grpc.py
+COPY --chown=appuser:appuser . .
 
 # Create necessary directories
 RUN mkdir -p /app/logs \

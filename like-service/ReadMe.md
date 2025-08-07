@@ -9,3 +9,5 @@ rm -rf ~/.cargo/registry/index/\* ~/.cargo/.package-cache
 
 https://medium.com/@rrnazario/rust-how-to-fix-failed-to-run-custom-build-command-for-aws-lc-sys-on-windows-c3bd2405ac6f
 ADD LIBCLANG_PATH = "" to env??
+
+docker exec -it like-db //surreal sql --conn ws://like-db:8000 --user root --pass A473nuaWrUvn

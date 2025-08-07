@@ -8,6 +8,8 @@ bundle info <>
 Many Ruby gems (like json, pg, rbtree, bigdecimal, prism in your case) contain parts written in C or other languages that need to be compiled into executable code for your specific operating system. On Windows, this compilation is typically handled by a set of tools provided by MSYS2 (Minimal SYStem 2).
 https://www.msys2.org/
 
+bundle lock --add-platform x86_64-linux
+
 ridk install
 pacman -Syu # Updates everything (may prompt to restart MSYS2)
 pacman -S base-devel # Installs make, gcc, autoconf, etc.

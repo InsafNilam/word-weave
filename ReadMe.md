@@ -13,3 +13,5 @@ mysqld --skip-grant-tables --init-file=C:\path\to\your\reset_password.txt
 ALTER USER 'root'@'localhost' IDENTIFIED BY 'YourNewPassword';
 
 dotnet tool install --global dotnet-ef
+
+docker-compose run --entrypoint sh like-service
