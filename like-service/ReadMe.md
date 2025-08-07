@@ -11,3 +11,6 @@ https://medium.com/@rrnazario/rust-how-to-fix-failed-to-run-custom-build-command
 ADD LIBCLANG_PATH = "" to env??
 
 docker exec -it like-db //surreal sql --conn ws://like-db:8000 --user root --pass A473nuaWrUvn
+cargo run --bin server
+
+docker-compose up -d --no-deps --build --force-recreate like-service

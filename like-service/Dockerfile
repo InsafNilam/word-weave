@@ -54,7 +54,7 @@ RUN adduser \
     appuser
 
 # Install C++ runtime libraries
-RUN apk add --no-cache libgcc libstdc++
+RUN apk add --no-cache libgcc libstdc++ curl netcat-openbsd
 
 USER appuser
 
