@@ -10,12 +10,12 @@ services:
     restart: always
     volumes:
       - post_db_data:/var/lib/postgresql/data
-    ports:
+    expose:
       - "5432"
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d postgres'"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -29,6 +29,7 @@ services:
   # SurrealDB for Like Service
   like-db:
     image: surrealdb/surrealdb:v2.3.7
+    user: root
     container_name: like-db
     env_file:
       - .env
@@ -37,21 +38,23 @@ services:
       - start
       - --log
       - trace
-      - --auth
       - --user
       - $SURREAL_DB_USER
       - --pass
       - $SURREAL_DB_PASSWORD
+      - --bind=0.0.0.0:8000
       - $SURREAL_DATABASE_URL
     restart: always
     volumes:
       - like_db_data:/data
-    ports:
-      - "8000"
+    ports:           # Add this
+      - "8000:8000"  # Add this - maps host:8000 to container:8000
+    # expose:
+    #   - "8000"
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "$SURREAL_HEALTH_CHECK_URL"]
+      test: ["CMD", "/surreal", "isready"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -69,15 +72,17 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: user_db
     restart: always
     volumes:
       - user_db_data:/data/db
-    ports:
+      - ./config/mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+    expose:
       - "27017"
     networks:
       - microservices-network
     healthcheck:
-      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand(\"ping\")' --quiet || mongo --eval 'db.adminCommand(\"ping\")' --quiet"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -96,7 +101,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
-    ports:
+    expose:
      - "3306"
     volumes:
       - comment_db_data:/var/lib/mysql
@@ -119,7 +124,7 @@ services:
     image: redis:7.4.5-alpine
     container_name: redis
     restart: always
-    ports:
+    expose:
       - "6379"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -146,8 +151,9 @@ services:
     - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
     - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
     ports:
-      - "5672"
       - "15672:15672"
+    expose:
+      - "5672"
     networks:
       - microservices-network
     healthcheck:
@@ -169,10 +175,10 @@ services:
       dockerfile: Dockerfile
     container_name: word-weave
     environment:
-      - VITE_API_URL=http://api-gateway:8080
-      - VITE_IK_URL_ENDPOINT=${IMAGEKIT_URL_ENDPOINT}
-      - VITE_IK_PUBLIC_KEY=${IMAGEKIT_PUBLIC_KEY}
-      - VITE_CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
+      VITE_API_URL : http://api-gateway:8080
+      VITE_IK_URL_ENDPOINT : ${IMAGEKIT_URL_ENDPOINT}
+      VITE_IK_PUBLIC_KEY : ${IMAGEKIT_PUBLIC_KEY}
+      VITE_CLERK_PUBLISHABLE_KEY : ${CLERK_PUBLISHABLE_KEY}
     ports:
       - "5173:5173"
     networks:
@@ -195,12 +201,12 @@ services:
       - PORT=${API_PORT}
       - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - POST_SERVICE_ADDR=${POST_SERVICE_ADDR}
-      - USER_SERVICE_ADDR=${USER_SERVICE_ADDR}
-      - LIKE_SERVICE_ADDR=${LIKE_SERVICE_ADDR}
-      - COMMENT_SERVICE_ADDR=${COMMENT_SERVICE_ADDR}
-      - EVENT_SERVICE_ADDR=${EVENT_SERVICE_ADDR}
-      - MEDIA_SERVICE_ADDR=${MEDIA_SERVICE_ADDR}
+      - POST_SERVICE_HOST=${POST_SERVICE_ADDR}
+      - USER_SERVICE_HOST=${USER_SERVICE_ADDR}
+      - LIKE_SERVICE_HOST=${LIKE_SERVICE_ADDR}
+      - COMMENT_SERVICE_HOST=${COMMENT_SERVICE_ADDR}
+      - EVENT_SERVICE_HOST=${EVENT_SERVICE_ADDR}
+      - MEDIA_SERVICE_HOST=${MEDIA_SERVICE_ADDR}
     ports:
       - "8080:8080"
     depends_on:
@@ -208,7 +214,7 @@ services:
       - post-service
       - like-service
       - comment-service
-      - event_service
+      - event-service
       - media-service
     networks:
       - microservices-network
@@ -239,10 +245,10 @@ services:
       - GRPC_PORT=50051
       - WEBHOOK_PORT=${WEBHOOK_PORT}
       - WEBHOOK_HOST=${WEBHOOK_HOST}
-      - MONGO_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@user-db:27017/user_db
+      - MONGO_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@user-db:27017/user_db
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - EVENT_SERVICE_HOST=${EVENT_SERVICE_ADDR}
-    ports:
+    expose:
       - "50051"
     depends_on:
       user-db:
@@ -278,7 +284,7 @@ services:
       - GRPC_PORT=50052
       - USER_SERVICE_ADDRESS=${USER_SERVICE_ADDR}
       - EVENT_SERVICE_ADDRESS=${EVENT_SERVICE_ADDR}
-    ports:
+    expose:
       - "50052"
     depends_on:
       post-db:
@@ -308,14 +314,21 @@ services:
     environment:
       - DB_USER=${SURREAL_DB_USER}
       - DB_PASSWORD=${SURREAL_DB_PASSWORD}
-      - DATABASE_URL=ws://like_db:8000
+      - DATABASE_URL=ws://like-db:8000/rpc
       - SURREAL_HEALTH_CHECK_URL=http://like-db:8000/health
-      - USER_SERVICE_URL=${USER_SERVICE_ADDR}
-      - POST_SERVICE_URL=${POST_SERVICE_ADDR}
+      - USER_SERVICE_URL=http://${USER_SERVICE_ADDR}
+      - POST_SERVICE_URL=http://${POST_SERVICE_ADDR}
       - HOST=0.0.0.0
       - PORT=50053
-    ports:
+      # Environment
+      - ENVIRONMENT=development
+
+      # Logging
+      - LOG_LEVEL=debug
+      - RUST_LOG=likes_service=debug,tonic=debug
+    expose:
       - "50053"
+    # command: [ "sleep", "infinity" ]
     depends_on:
       like-db:
         condition: service_healthy
@@ -347,8 +360,8 @@ services:
       - GRPCSETTINGS__USERSERVICEURL=${USER_SERVICE_ADDR}
       - GRPCSETTINGS__POSTSERVICEURL=${POST_SERVICE_ADDR}
       - GRPCSETTINGS__EVENTSERVICEURL=${EVENT_SERVICE_ADDR}
-      - KESTREL__ENDPOINTS__GRPC__URL=${COMMENT_SERVICE_ADDR}
-    ports:
+      - KESTREL__ENDPOINTS__GRPC__URL=http://0.0.0.0:50054
+    expose:
       - "50054"
     depends_on:
       comment-db:
@@ -371,10 +384,11 @@ services:
         reservations:
           memory: 256M
   
-  event_service:
+  event-service:
     build:
       context: ./event-service
       dockerfile: Dockerfile
+    container_name: event-service
     environment:
       DB_HOST: post-db
       DB_PORT: 5432
@@ -389,7 +403,7 @@ services:
       DATABASE_URL: ${EVENT_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
       GRPC_PORT: 50055
-    ports:
+    expose:
       - "50055"
     depends_on:
       post-db:
@@ -398,7 +412,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    command: bin/server
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["bundle", "exec", "ruby", "lib/main.rb", "server"]
     healthcheck:
       test: ["CMD", "grpc-health-probe", "-addr=:50055"]
       interval: 30s
@@ -412,10 +429,11 @@ services:
         reservations:
           memory: 256M
 
-  event_consumer:
+  event-consumer:
     build:
       context: ./event-service
       dockerfile: Dockerfile
+    container_name: event-consumer
     environment:
       DB_HOST: post-db
       DB_PORT: 5432
@@ -430,6 +448,8 @@ services:
       DATABASE_URL: ${EVENT_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
       GRPC_PORT: 50055
+    expose:
+      - "50055"
     depends_on:
       post-db:
         condition: service_healthy
@@ -437,7 +457,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    command: bin/consumer
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["bundle", "exec", "ruby", "lib/main.rb", "consumer"]
     deploy:
       resources:
         limits:
@@ -445,10 +468,11 @@ services:
         reservations:
           memory: 128M
 
-  dead_letter_handler:
+  dead-letter-handler:
     build:
       context: ./event-service
       dockerfile: Dockerfile
+    container_name: dead-letter-handler
     environment:
       DB_HOST: post-db
       DB_PORT: 5432
@@ -469,7 +493,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-    command: bin/dead_letter_handler
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    command: ["bundle", "exec", "ruby", "lib/main.rb", "dead_letter"]
     deploy:
       resources:
         limits:
@@ -482,7 +509,7 @@ services:
       context: ./media-service
       dockerfile: Dockerfile
     container_name: media-service
-    ports:
+    expose:
       - "50056"
     environment:
       # ImageKit Configuration
@@ -505,7 +532,9 @@ services:
       - MAX_FILE_SIZE_MB=100
       - MAX_FILES_PER_BATCH_DELETE=100
     volumes:
-      - ./logs:/app/logs
+      - media_data:/app/media/logs
+    networks:
+      - microservices-network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "grpc-health-probe", "-addr=:50056"]
@@ -513,8 +542,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    networks:
-      - microservices-network
     deploy:
       resources:
         limits:
@@ -534,6 +561,8 @@ volumes:
   redis_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  media_data:
     driver: local
 
 networks:
