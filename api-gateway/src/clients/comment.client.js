@@ -20,6 +20,6 @@ const packageDef = protoLoader.loadSync(PROTO_PATH, {
 const proto = grpc.loadPackageDefinition(packageDef).comment;
 
 export const commentClient = new proto.CommentService(
-  process.env.COMMENT_SERVICE_HOST || "comment-service:50051",
+  process.env.COMMENT_SERVICE_HOST || "comment-service:50054",
   grpc.credentials.createInsecure()
 );

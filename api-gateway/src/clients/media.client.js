@@ -20,6 +20,6 @@ const packageDef = protoLoader.loadSync(PROTO_PATH, {
 const proto = grpc.loadPackageDefinition(packageDef).media;
 
 export const mediaClient = new proto.MediaService(
-  process.env.MEDIA_SERVICE_HOST || "media-service:50051",
+  process.env.MEDIA_SERVICE_HOST || "media-service:50056",
   grpc.credentials.createInsecure()
 );

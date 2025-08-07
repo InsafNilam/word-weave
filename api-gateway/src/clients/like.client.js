@@ -20,6 +20,6 @@ const packageDef = protoLoader.loadSync(PROTO_PATH, {
 const proto = grpc.loadPackageDefinition(packageDef).like;
 
 export const likeClient = new proto.LikesService(
-  process.env.LIKE_SERVICE_HOST || "like-service:50052",
+  process.env.LIKE_SERVICE_HOST || "like-service:50053",
   grpc.credentials.createInsecure()
 );
