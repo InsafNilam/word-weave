@@ -12,16 +12,14 @@ COPY . .
 RUN npm run build
 
 # ---------- Production Stage ----------
-FROM node:22.17.1-alpine AS production
+FROM nginx:alpine AS production
 
-WORKDIR /app
+COPY ./nginx.conf /etc/nginx/nginx.conf
+COPY --from=builder /app/dist /var/www/html/
 
-# Install static server
-RUN npm i -g serve
+COPY env.sh /docker-entrypoint.d/env.sh
+RUN dos2unix /docker-entrypoint.d/env.sh
+RUN chmod +x /docker-entrypoint.d/env.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
-# Copy build output from builder stage
-COPY --from=builder /app/dist ./dist
-
-EXPOSE 5173
-
-CMD ["serve", "-s", "dist", "-l", "5173"]
+CMD ["nginx","-g","daemon off;"]
