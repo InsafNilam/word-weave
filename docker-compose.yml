@@ -175,10 +175,12 @@ services:
       dockerfile: Dockerfile
     container_name: word-weave
     environment:
-      VITE_API_URL : http://api-gateway:8080
-      VITE_IK_URL_ENDPOINT : ${IMAGEKIT_URL_ENDPOINT}
-      VITE_IK_PUBLIC_KEY : ${IMAGEKIT_PUBLIC_KEY}
-      VITE_CLERK_PUBLISHABLE_KEY : ${CLERK_PUBLISHABLE_KEY}
+      ASSET_DIR: /var/www/html
+      APP_PREFIX: PREFIX_
+      PREFIX_API_URL : http://api-gateway:8080
+      PREFIX_IK_URL_ENDPOINT : ${IMAGEKIT_URL_ENDPOINT}
+      PREFIX_IK_PUBLIC_KEY : ${IMAGEKIT_PUBLIC_KEY}
+      PREFIX_CLERK_PUBLISHABLE_KEY : ${CLERK_PUBLISHABLE_KEY}
     ports:
       - "5173:5173"
     networks:
