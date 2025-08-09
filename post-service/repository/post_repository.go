@@ -3,6 +3,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"post-service/models"
 
 	"gorm.io/gorm"
@@ -13,6 +14,7 @@ type PostRepository interface {
 	GetByID(id uint) (*models.Post, error)
 	GetBySlug(slug string) (*models.Post, error)
 	Update(post *models.Post) error
+	ValidateSlugUnique(slug string, excludeID uint) error
 	Delete(id uint, userID string) error
 	List(page, limit int, category string, userID string) ([]models.Post, int64, error)
 	IncrementVisit(id uint) error
@@ -62,6 +64,18 @@ func (r *postRepository) GetBySlug(slug string) (*models.Post, error) {
 
 func (r *postRepository) Update(post *models.Post) error {
 	return r.db.Save(post).Error
+}
+
+func (r *postRepository) ValidateSlugUnique(slug string, excludeID uint) error {
+	var count int64
+	err := r.db.Model(&models.Post{}).Where("slug = ? AND id != ?", slug, excludeID).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return fmt.Errorf("slug already exists")
+	}
+	return nil
 }
 
 func (r *postRepository) Delete(id uint, userID string) error {

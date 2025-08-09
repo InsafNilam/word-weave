@@ -7,7 +7,7 @@ import InfiniteLoader from "react-window-infinite-loader";
 import type { ListChildComponentProps } from "react-window";
 
 interface Post {
-  _id: string;
+  id: string;
   title: string;
   img?: string;
   slug: string;
@@ -35,7 +35,7 @@ const fetchPosts = async (
 
   console.log(searchParamsObj);
 
-  const res = await axios.get<FetchPostsResponse>(`${import.meta.env.VITE_API_URL}/posts`, {
+  const res = await axios.get<FetchPostsResponse>(`${import.meta.env.VITE_API_URL}/api/posts/search`, {
     params: { page: page, limit: 10, ...searchParamsObj },
   });
   return res.data;

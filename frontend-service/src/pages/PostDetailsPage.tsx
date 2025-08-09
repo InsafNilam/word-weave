@@ -13,7 +13,7 @@ interface User {
 }
 
 interface Post {
-  _id: string;
+  id: number;
   title: string;
   desc: string;
   img?: string;
@@ -23,7 +23,7 @@ interface Post {
 }
 
 const fetchPost = async (slug: string | undefined): Promise<Post> => {
-  const res = await axios.get<Post>(`${import.meta.env.VITE_API_URL}/posts/${slug}`);
+  const res = await axios.get<Post>(`${import.meta.env.VITE_API_URL}/api/posts/slug/${slug}`);
   return res.data;
 };
 
@@ -202,7 +202,7 @@ const PostDetailsPage = () => {
           <Search />
         </div>
       </div>
-      <Comments postId={data._id} />
+      <Comments postId={data.id} />
     </div>
   );
 };

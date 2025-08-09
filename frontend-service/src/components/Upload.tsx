@@ -49,7 +49,7 @@ const Upload = forwardRef<UploadRef, UploadProps>(
     }> => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/posts/upload-auth`
+          `${import.meta.env.VITE_API_URL}/api/media/auth`
         );
 
         if (!response.ok) {

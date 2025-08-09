@@ -11,7 +11,7 @@ type CommentUser = {
 };
 
 type CommentType = {
-  _id?: string;
+  id?: number;
   user: CommentUser;
   createdAt: string | Date;
   desc: string;
@@ -19,7 +19,7 @@ type CommentType = {
 
 interface CommentProps {
   comment: CommentType;
-  postId?: string;
+  postId?: number;
 }
 
 const Comment = ({ comment, postId }: CommentProps) => {
@@ -33,7 +33,7 @@ const Comment = ({ comment, postId }: CommentProps) => {
     mutationFn: async () => {
       const token = await getToken();
       return axios.delete(
-        `${import.meta.env.VITE_API_URL}/comments/${comment._id}`,
+        `${import.meta.env.VITE_API_URL}/api/comments/${comment.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

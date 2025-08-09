@@ -23,6 +23,7 @@ const (
 	PostService_GetPost_FullMethodName            = "/post.PostService/GetPost"
 	PostService_GetPostBySlug_FullMethodName      = "/post.PostService/GetPostBySlug"
 	PostService_UpdatePost_FullMethodName         = "/post.PostService/UpdatePost"
+	PostService_PatchPost_FullMethodName          = "/post.PostService/PatchPost"
 	PostService_DeletePost_FullMethodName         = "/post.PostService/DeletePost"
 	PostService_ListPosts_FullMethodName          = "/post.PostService/ListPosts"
 	PostService_IncrementVisit_FullMethodName     = "/post.PostService/IncrementVisit"
@@ -42,6 +43,7 @@ type PostServiceClient interface {
 	GetPost(ctx context.Context, in *GetPostRequest, opts ...grpc.CallOption) (*PostResponse, error)
 	GetPostBySlug(ctx context.Context, in *GetPostBySlugRequest, opts ...grpc.CallOption) (*PostResponse, error)
 	UpdatePost(ctx context.Context, in *UpdatePostRequest, opts ...grpc.CallOption) (*PostResponse, error)
+	PatchPost(ctx context.Context, in *PatchPostRequest, opts ...grpc.CallOption) (*PostResponse, error)
 	DeletePost(ctx context.Context, in *DeletePostRequest, opts ...grpc.CallOption) (*DeletePostResponse, error)
 	ListPosts(ctx context.Context, in *ListPostsRequest, opts ...grpc.CallOption) (*ListPostsResponse, error)
 	IncrementVisit(ctx context.Context, in *IncrementVisitRequest, opts ...grpc.CallOption) (*PostResponse, error)
@@ -95,6 +97,16 @@ func (c *postServiceClient) UpdatePost(ctx context.Context, in *UpdatePostReques
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PostResponse)
 	err := c.cc.Invoke(ctx, PostService_UpdatePost_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *postServiceClient) PatchPost(ctx context.Context, in *PatchPostRequest, opts ...grpc.CallOption) (*PostResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PostResponse)
+	err := c.cc.Invoke(ctx, PostService_PatchPost_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -199,6 +211,7 @@ type PostServiceServer interface {
 	GetPost(context.Context, *GetPostRequest) (*PostResponse, error)
 	GetPostBySlug(context.Context, *GetPostBySlugRequest) (*PostResponse, error)
 	UpdatePost(context.Context, *UpdatePostRequest) (*PostResponse, error)
+	PatchPost(context.Context, *PatchPostRequest) (*PostResponse, error)
 	DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error)
 	ListPosts(context.Context, *ListPostsRequest) (*ListPostsResponse, error)
 	IncrementVisit(context.Context, *IncrementVisitRequest) (*PostResponse, error)
@@ -229,6 +242,9 @@ func (UnimplementedPostServiceServer) GetPostBySlug(context.Context, *GetPostByS
 }
 func (UnimplementedPostServiceServer) UpdatePost(context.Context, *UpdatePostRequest) (*PostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdatePost not implemented")
+}
+func (UnimplementedPostServiceServer) PatchPost(context.Context, *PatchPostRequest) (*PostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PatchPost not implemented")
 }
 func (UnimplementedPostServiceServer) DeletePost(context.Context, *DeletePostRequest) (*DeletePostResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePost not implemented")
@@ -346,6 +362,24 @@ func _PostService_UpdatePost_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PostServiceServer).UpdatePost(ctx, req.(*UpdatePostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PostService_PatchPost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PatchPostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServiceServer).PatchPost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PostService_PatchPost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServiceServer).PatchPost(ctx, req.(*PatchPostRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -534,6 +568,10 @@ var PostService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdatePost",
 			Handler:    _PostService_UpdatePost_Handler,
+		},
+		{
+			MethodName: "PatchPost",
+			Handler:    _PostService_PatchPost_Handler,
 		},
 		{
 			MethodName: "DeletePost",

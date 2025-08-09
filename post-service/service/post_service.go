@@ -197,6 +197,145 @@ func (s *PostServiceServer) UpdatePost(ctx context.Context, req *pb.UpdatePostRe
 	}, nil
 }
 
+func (s *PostServiceServer) PatchPost(ctx context.Context, req *pb.PatchPostRequest) (*pb.PostResponse, error) {
+	// Get existing post
+	existingPost, err := s.repo.GetByID(uint(req.Id))
+	if err != nil {
+		return &pb.PostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Post not found: %v", err),
+		}, nil
+	}
+
+	// Check if user owns the post
+	if existingPost.UserID != req.UserId {
+		return &pb.PostResponse{
+			Success: false,
+			Message: "Unauthorized to update this post",
+		}, nil
+	}
+
+	// Track what fields were updated for event publishing
+	updatedFields := make([]string, 0)
+	oldValues := make(map[string]interface{})
+
+	// PATCH: Only update fields that are explicitly provided
+	if req.Img != nil {
+		if existingPost.Img != *req.Img {
+			oldValues["img"] = existingPost.Img
+			existingPost.Img = *req.Img
+			updatedFields = append(updatedFields, "img")
+		}
+	}
+
+	if req.Title != nil {
+		if existingPost.Title != *req.Title {
+			oldValues["title"] = existingPost.Title
+			existingPost.Title = *req.Title
+			updatedFields = append(updatedFields, "title")
+		}
+	}
+
+	if req.Slug != nil {
+		if existingPost.Slug != *req.Slug {
+			// Validate slug uniqueness
+			if err := s.repo.ValidateSlugUnique(*req.Slug, uint(req.Id)); err != nil {
+				return &pb.PostResponse{
+					Success: false,
+					Message: "Slug already exists",
+				}, nil
+			}
+			oldValues["slug"] = existingPost.Slug
+			existingPost.Slug = *req.Slug
+			updatedFields = append(updatedFields, "slug")
+		}
+	}
+
+	if req.Desc != nil {
+		if existingPost.Desc != *req.Desc {
+			oldValues["desc"] = existingPost.Desc
+			existingPost.Desc = *req.Desc
+			updatedFields = append(updatedFields, "desc")
+		}
+	}
+
+	if req.Category != nil {
+		if existingPost.Category != *req.Category {
+			oldValues["category"] = existingPost.Category
+			existingPost.Category = *req.Category
+			updatedFields = append(updatedFields, "category")
+		}
+	}
+
+	if req.Content != nil {
+		if existingPost.Content != *req.Content {
+			oldValues["content"] = existingPost.Content
+			existingPost.Content = *req.Content
+			updatedFields = append(updatedFields, "content")
+		}
+	}
+
+	if req.IsFeatured != nil {
+		if existingPost.IsFeatured != *req.IsFeatured {
+			oldValues["is_featured"] = existingPost.IsFeatured
+			existingPost.IsFeatured = *req.IsFeatured
+			updatedFields = append(updatedFields, "is_featured")
+		}
+	}
+
+	// If no fields were updated, return success without database call
+	if len(updatedFields) == 0 {
+		return &pb.PostResponse{
+			Post:    s.modelToProto(existingPost),
+			Success: true,
+			Message: "No changes detected",
+		}, nil
+	}
+
+	// Update the post in database
+	err = s.repo.Update(existingPost)
+	if err != nil {
+		return &pb.PostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to update post: %v", err),
+		}, nil
+	}
+
+	// 📤 Publish domain event with detailed change information
+	eventData := fmt.Sprintf(`{
+        "id": "%d",
+        "title": "%s",
+        "userId": "%s",
+        "updatedFields": ["%s"],
+        "changes": %s
+    }`,
+		existingPost.ID,
+		existingPost.Title,
+		existingPost.UserID,
+		strings.Join(updatedFields, `","`),
+		s.buildChangesJSON(updatedFields, oldValues, existingPost),
+	)
+
+	_, err = s.eventClient.PublishEvent(ctx, &eventpb.PublishEventRequest{
+		AggregateId:   fmt.Sprintf("%d", existingPost.ID),
+		AggregateType: "Post",
+		EventType:     "post.patched",
+		EventData:     eventData,
+		Metadata:      fmt.Sprintf(`{"user_id":"%s","updated_at":"%s","fields_count":%d}`, req.UserId, time.Now().UTC().Format(time.RFC3339), len(updatedFields)),
+	})
+
+	if err != nil {
+		// Log but don't fail post update
+		fmt.Printf("⚠️ Failed to publish patch event: %v\n", err)
+	}
+
+	return &pb.PostResponse{
+		Post:    s.modelToProto(existingPost),
+		Success: true,
+		Message: fmt.Sprintf("Post updated successfully. %d field(s) changed.", len(updatedFields)),
+	}, nil
+}
+
 func (s *PostServiceServer) DeletePost(ctx context.Context, req *pb.DeletePostRequest) (*pb.DeletePostResponse, error) {
 	err := s.repo.Delete(uint(req.Id), req.UserId)
 	if err != nil {
@@ -462,6 +601,35 @@ func (s *PostServiceServer) DeletePosts(ctx context.Context, req *pb.DeletePosts
 		Success: true,
 		Message: "Posts deleted successfully",
 	}, nil
+}
+
+func (s *PostServiceServer) buildChangesJSON(updatedFields []string, oldValues map[string]interface{}, newPost *models.Post) string {
+	changes := make([]string, 0, len(updatedFields))
+
+	for _, field := range updatedFields {
+		var newValue interface{}
+		switch field {
+		case "img":
+			newValue = newPost.Img
+		case "title":
+			newValue = newPost.Title
+		case "slug":
+			newValue = newPost.Slug
+		case "desc":
+			newValue = newPost.Desc
+		case "category":
+			newValue = newPost.Category
+		case "content":
+			newValue = newPost.Content
+		case "is_featured":
+			newValue = newPost.IsFeatured
+		}
+
+		change := fmt.Sprintf(`"%s":{"old":"%v","new":"%v"}`, field, oldValues[field], newValue)
+		changes = append(changes, change)
+	}
+
+	return fmt.Sprintf("{%s}", strings.Join(changes, ","))
 }
 
 // Helper function to convert model to proto

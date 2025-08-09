@@ -10,21 +10,21 @@ interface User {
 }
 
 export interface CommentType {
-  _id: string;
+  id: number;
   desc: string;
   createdAt: string | Date;
   user: User;
 }
 
-const fetchComments = async (postId: string): Promise<CommentType[]> => {
+const fetchComments = async (postId: number): Promise<CommentType[]> => {
   const res = await axios.get(
-    `${import.meta.env.VITE_API_URL}/comments/${postId}`
+    `${import.meta.env.VITE_API_URL}/api/comments/posts/${postId}`
   );
   return res.data;
 };
 
 interface CommentsProps {
-  postId: string;
+  postId: number;
 }
 
 const Comments = ({ postId }: CommentsProps) => {
@@ -110,7 +110,7 @@ const Comments = ({ postId }: CommentsProps) => {
           )}
 
           {data.map((comment) => (
-            <Comment key={comment._id} comment={comment} postId={postId} />
+            <Comment key={comment.id} comment={comment} postId={postId} />
           ))}
         </>
       )}

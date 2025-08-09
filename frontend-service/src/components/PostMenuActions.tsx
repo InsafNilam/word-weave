@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface Post {
-  _id: string;
+  id: number;
   slug?: string;
   isFeatured?: boolean;
   user: {
@@ -34,7 +34,7 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
     queryKey: ["savedPosts"],
     queryFn: async () => {
       const token = await getToken();
-      return axios.get(`${import.meta.env.VITE_API_URL}/users/saved`, {
+      return axios.get(`${import.meta.env.VITE_API_URL}/api/likes/users/${user?.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -44,12 +44,12 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
 
   const isAdmin = user?.publicMetadata?.role === "admin" || false;
 
-  const isSaved: boolean = (savedPosts as SavedPostsResponse)?.data?.some((p: string) => p === post._id) || false;
+  const isSaved: boolean = (savedPosts as SavedPostsResponse)?.data?.some((p: string) => p === String(post.id)) || false;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const token = await getToken();
-      return axios.delete(`${import.meta.env.VITE_API_URL}/posts/${post._id}`, {
+      return axios.delete(`${import.meta.env.VITE_API_URL}/api/posts/${post.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -70,9 +70,10 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
     mutationFn: async () => {
       const token = await getToken();
       return axios.patch(
-        `${import.meta.env.VITE_API_URL}/users/save`,
+        `${import.meta.env.VITE_API_URL}/api/likes`,
         {
-          postId: post._id,
+          postId: post.id,
+          userId: user?.id,
         },
         {
           headers: {
@@ -93,9 +94,10 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
     mutationFn: async () => {
       const token = await getToken();
       return axios.patch(
-        `${import.meta.env.VITE_API_URL}/posts/feature`,
+        `${import.meta.env.VITE_API_URL}/api/posts/${post.id}`,
         {
-          postId: post._id,
+          userId: user?.id,
+          isFeatured: !post.isFeatured,
         },
         {
           headers: {

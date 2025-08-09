@@ -74,6 +74,32 @@ router.put("/:id", authorizeByRole([]), (req, res) => {
   });
 });
 
+router.patch("/:id", authorizeByRole([]), (req, res) => {
+  const { id } = req.params;
+  const postData = req.body;
+
+  // Filter out undefined/null values for true PATCH behavior
+  const filteredData = Object.fromEntries(
+    Object.entries(postData).filter(
+      ([_, value]) => value !== undefined && value !== null
+    )
+  );
+
+  postClient.PatchPost(
+    {
+      id: parseInt(id),
+      user_id: req.user?.id,
+      ...filteredData,
+    },
+    (err, response) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(response);
+    }
+  );
+});
+
 router.delete("/:id", authorizeByRole([]), (req, res) => {
   const { id } = req.params;
   const { user_id } = req.body;

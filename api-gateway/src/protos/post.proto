@@ -11,6 +11,7 @@ service PostService {
   rpc GetPost(GetPostRequest) returns (PostResponse);
   rpc GetPostBySlug(GetPostBySlugRequest) returns (PostResponse);
   rpc UpdatePost(UpdatePostRequest) returns (PostResponse);
+  rpc PatchPost(PatchPostRequest) returns (PostResponse);
   rpc DeletePost(DeletePostRequest) returns (DeletePostResponse);
   rpc ListPosts(ListPostsRequest) returns (ListPostsResponse);
   rpc IncrementVisit(IncrementVisitRequest) returns (PostResponse);
@@ -68,6 +69,18 @@ message UpdatePostRequest {
   string category = 7;
   string content = 8;
   bool is_featured = 9;
+}
+
+message PatchPostRequest {
+  uint32 id = 1;
+  string user_id = 2;
+  optional string img = 3;
+  optional string title = 4;
+  optional string slug = 5;
+  optional string desc = 6;
+  optional string category = 7;
+  optional string content = 8;
+  optional bool is_featured = 9;
 }
 
 message DeletePostRequest {

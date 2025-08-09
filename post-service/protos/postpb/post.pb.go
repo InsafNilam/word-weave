@@ -510,6 +510,114 @@ func (x *UpdatePostRequest) GetIsFeatured() bool {
 	return false
 }
 
+type PatchPostRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Img           *string                `protobuf:"bytes,3,opt,name=img,proto3,oneof" json:"img,omitempty"`
+	Title         *string                `protobuf:"bytes,4,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Slug          *string                `protobuf:"bytes,5,opt,name=slug,proto3,oneof" json:"slug,omitempty"`
+	Desc          *string                `protobuf:"bytes,6,opt,name=desc,proto3,oneof" json:"desc,omitempty"`
+	Category      *string                `protobuf:"bytes,7,opt,name=category,proto3,oneof" json:"category,omitempty"`
+	Content       *string                `protobuf:"bytes,8,opt,name=content,proto3,oneof" json:"content,omitempty"`
+	IsFeatured    *bool                  `protobuf:"varint,9,opt,name=is_featured,json=isFeatured,proto3,oneof" json:"is_featured,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PatchPostRequest) Reset() {
+	*x = PatchPostRequest{}
+	mi := &file_protos_post_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PatchPostRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PatchPostRequest) ProtoMessage() {}
+
+func (x *PatchPostRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_protos_post_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PatchPostRequest.ProtoReflect.Descriptor instead.
+func (*PatchPostRequest) Descriptor() ([]byte, []int) {
+	return file_protos_post_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PatchPostRequest) GetId() uint32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *PatchPostRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetImg() string {
+	if x != nil && x.Img != nil {
+		return *x.Img
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetSlug() string {
+	if x != nil && x.Slug != nil {
+		return *x.Slug
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetDesc() string {
+	if x != nil && x.Desc != nil {
+		return *x.Desc
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetCategory() string {
+	if x != nil && x.Category != nil {
+		return *x.Category
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetContent() string {
+	if x != nil && x.Content != nil {
+		return *x.Content
+	}
+	return ""
+}
+
+func (x *PatchPostRequest) GetIsFeatured() bool {
+	if x != nil && x.IsFeatured != nil {
+		return *x.IsFeatured
+	}
+	return false
+}
+
 type DeletePostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            uint32                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -520,7 +628,7 @@ type DeletePostRequest struct {
 
 func (x *DeletePostRequest) Reset() {
 	*x = DeletePostRequest{}
-	mi := &file_protos_post_proto_msgTypes[6]
+	mi := &file_protos_post_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -532,7 +640,7 @@ func (x *DeletePostRequest) String() string {
 func (*DeletePostRequest) ProtoMessage() {}
 
 func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[6]
+	mi := &file_protos_post_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -545,7 +653,7 @@ func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostRequest.ProtoReflect.Descriptor instead.
 func (*DeletePostRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{6}
+	return file_protos_post_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeletePostRequest) GetId() uint32 {
@@ -572,7 +680,7 @@ type DeletePostResponse struct {
 
 func (x *DeletePostResponse) Reset() {
 	*x = DeletePostResponse{}
-	mi := &file_protos_post_proto_msgTypes[7]
+	mi := &file_protos_post_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +692,7 @@ func (x *DeletePostResponse) String() string {
 func (*DeletePostResponse) ProtoMessage() {}
 
 func (x *DeletePostResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[7]
+	mi := &file_protos_post_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +705,7 @@ func (x *DeletePostResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostResponse.ProtoReflect.Descriptor instead.
 func (*DeletePostResponse) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{7}
+	return file_protos_post_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeletePostResponse) GetMessage() string {
@@ -624,7 +732,7 @@ type DeletePostsRequest struct {
 
 func (x *DeletePostsRequest) Reset() {
 	*x = DeletePostsRequest{}
-	mi := &file_protos_post_proto_msgTypes[8]
+	mi := &file_protos_post_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -636,7 +744,7 @@ func (x *DeletePostsRequest) String() string {
 func (*DeletePostsRequest) ProtoMessage() {}
 
 func (x *DeletePostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[8]
+	mi := &file_protos_post_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -649,7 +757,7 @@ func (x *DeletePostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostsRequest.ProtoReflect.Descriptor instead.
 func (*DeletePostsRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{8}
+	return file_protos_post_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DeletePostsRequest) GetIds() []uint32 {
@@ -678,7 +786,7 @@ type ListPostsRequest struct {
 
 func (x *ListPostsRequest) Reset() {
 	*x = ListPostsRequest{}
-	mi := &file_protos_post_proto_msgTypes[9]
+	mi := &file_protos_post_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -690,7 +798,7 @@ func (x *ListPostsRequest) String() string {
 func (*ListPostsRequest) ProtoMessage() {}
 
 func (x *ListPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[9]
+	mi := &file_protos_post_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -703,7 +811,7 @@ func (x *ListPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPostsRequest.ProtoReflect.Descriptor instead.
 func (*ListPostsRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{9}
+	return file_protos_post_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListPostsRequest) GetPage() uint32 {
@@ -747,7 +855,7 @@ type ListPostsResponse struct {
 
 func (x *ListPostsResponse) Reset() {
 	*x = ListPostsResponse{}
-	mi := &file_protos_post_proto_msgTypes[10]
+	mi := &file_protos_post_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -759,7 +867,7 @@ func (x *ListPostsResponse) String() string {
 func (*ListPostsResponse) ProtoMessage() {}
 
 func (x *ListPostsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[10]
+	mi := &file_protos_post_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -772,7 +880,7 @@ func (x *ListPostsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPostsResponse.ProtoReflect.Descriptor instead.
 func (*ListPostsResponse) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{10}
+	return file_protos_post_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListPostsResponse) GetPosts() []*Post {
@@ -819,7 +927,7 @@ type IncrementVisitRequest struct {
 
 func (x *IncrementVisitRequest) Reset() {
 	*x = IncrementVisitRequest{}
-	mi := &file_protos_post_proto_msgTypes[11]
+	mi := &file_protos_post_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -831,7 +939,7 @@ func (x *IncrementVisitRequest) String() string {
 func (*IncrementVisitRequest) ProtoMessage() {}
 
 func (x *IncrementVisitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[11]
+	mi := &file_protos_post_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -844,7 +952,7 @@ func (x *IncrementVisitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IncrementVisitRequest.ProtoReflect.Descriptor instead.
 func (*IncrementVisitRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{11}
+	return file_protos_post_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *IncrementVisitRequest) GetId() uint32 {
@@ -863,7 +971,7 @@ type GetFeaturedPostsRequest struct {
 
 func (x *GetFeaturedPostsRequest) Reset() {
 	*x = GetFeaturedPostsRequest{}
-	mi := &file_protos_post_proto_msgTypes[12]
+	mi := &file_protos_post_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -875,7 +983,7 @@ func (x *GetFeaturedPostsRequest) String() string {
 func (*GetFeaturedPostsRequest) ProtoMessage() {}
 
 func (x *GetFeaturedPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[12]
+	mi := &file_protos_post_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -888,7 +996,7 @@ func (x *GetFeaturedPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFeaturedPostsRequest.ProtoReflect.Descriptor instead.
 func (*GetFeaturedPostsRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{12}
+	return file_protos_post_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetFeaturedPostsRequest) GetLimit() uint32 {
@@ -909,7 +1017,7 @@ type GetPostsByCategoryRequest struct {
 
 func (x *GetPostsByCategoryRequest) Reset() {
 	*x = GetPostsByCategoryRequest{}
-	mi := &file_protos_post_proto_msgTypes[13]
+	mi := &file_protos_post_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -921,7 +1029,7 @@ func (x *GetPostsByCategoryRequest) String() string {
 func (*GetPostsByCategoryRequest) ProtoMessage() {}
 
 func (x *GetPostsByCategoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[13]
+	mi := &file_protos_post_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -934,7 +1042,7 @@ func (x *GetPostsByCategoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostsByCategoryRequest.ProtoReflect.Descriptor instead.
 func (*GetPostsByCategoryRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{13}
+	return file_protos_post_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GetPostsByCategoryRequest) GetCategory() string {
@@ -969,7 +1077,7 @@ type GetPostsByUserRequest struct {
 
 func (x *GetPostsByUserRequest) Reset() {
 	*x = GetPostsByUserRequest{}
-	mi := &file_protos_post_proto_msgTypes[14]
+	mi := &file_protos_post_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -981,7 +1089,7 @@ func (x *GetPostsByUserRequest) String() string {
 func (*GetPostsByUserRequest) ProtoMessage() {}
 
 func (x *GetPostsByUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[14]
+	mi := &file_protos_post_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -994,7 +1102,7 @@ func (x *GetPostsByUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostsByUserRequest.ProtoReflect.Descriptor instead.
 func (*GetPostsByUserRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{14}
+	return file_protos_post_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetPostsByUserRequest) GetUserId() string {
@@ -1029,7 +1137,7 @@ type SearchPostsRequest struct {
 
 func (x *SearchPostsRequest) Reset() {
 	*x = SearchPostsRequest{}
-	mi := &file_protos_post_proto_msgTypes[15]
+	mi := &file_protos_post_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1041,7 +1149,7 @@ func (x *SearchPostsRequest) String() string {
 func (*SearchPostsRequest) ProtoMessage() {}
 
 func (x *SearchPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[15]
+	mi := &file_protos_post_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1054,7 +1162,7 @@ func (x *SearchPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchPostsRequest.ProtoReflect.Descriptor instead.
 func (*SearchPostsRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{15}
+	return file_protos_post_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SearchPostsRequest) GetQuery() string {
@@ -1089,7 +1197,7 @@ type CountPostsRequest struct {
 
 func (x *CountPostsRequest) Reset() {
 	*x = CountPostsRequest{}
-	mi := &file_protos_post_proto_msgTypes[16]
+	mi := &file_protos_post_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1101,7 +1209,7 @@ func (x *CountPostsRequest) String() string {
 func (*CountPostsRequest) ProtoMessage() {}
 
 func (x *CountPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[16]
+	mi := &file_protos_post_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1114,7 +1222,7 @@ func (x *CountPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CountPostsRequest.ProtoReflect.Descriptor instead.
 func (*CountPostsRequest) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{16}
+	return file_protos_post_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CountPostsRequest) GetUserId() string {
@@ -1149,7 +1257,7 @@ type CountPostsResponse struct {
 
 func (x *CountPostsResponse) Reset() {
 	*x = CountPostsResponse{}
-	mi := &file_protos_post_proto_msgTypes[17]
+	mi := &file_protos_post_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1161,7 +1269,7 @@ func (x *CountPostsResponse) String() string {
 func (*CountPostsResponse) ProtoMessage() {}
 
 func (x *CountPostsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_protos_post_proto_msgTypes[17]
+	mi := &file_protos_post_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1174,7 +1282,7 @@ func (x *CountPostsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CountPostsResponse.ProtoReflect.Descriptor instead.
 func (*CountPostsResponse) Descriptor() ([]byte, []int) {
-	return file_protos_post_proto_rawDescGZIP(), []int{17}
+	return file_protos_post_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CountPostsResponse) GetTotal() uint32 {
@@ -1249,7 +1357,26 @@ const file_protos_post_proto_rawDesc = "" +
 	"\bcategory\x18\a \x01(\tR\bcategory\x12\x18\n" +
 	"\acontent\x18\b \x01(\tR\acontent\x12\x1f\n" +
 	"\vis_featured\x18\t \x01(\bR\n" +
-	"isFeatured\"<\n" +
+	"isFeatured\"\xd2\x02\n" +
+	"\x10PatchPostRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\rR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x15\n" +
+	"\x03img\x18\x03 \x01(\tH\x00R\x03img\x88\x01\x01\x12\x19\n" +
+	"\x05title\x18\x04 \x01(\tH\x01R\x05title\x88\x01\x01\x12\x17\n" +
+	"\x04slug\x18\x05 \x01(\tH\x02R\x04slug\x88\x01\x01\x12\x17\n" +
+	"\x04desc\x18\x06 \x01(\tH\x03R\x04desc\x88\x01\x01\x12\x1f\n" +
+	"\bcategory\x18\a \x01(\tH\x04R\bcategory\x88\x01\x01\x12\x1d\n" +
+	"\acontent\x18\b \x01(\tH\x05R\acontent\x88\x01\x01\x12$\n" +
+	"\vis_featured\x18\t \x01(\bH\x06R\n" +
+	"isFeatured\x88\x01\x01B\x06\n" +
+	"\x04_imgB\b\n" +
+	"\x06_titleB\a\n" +
+	"\x05_slugB\a\n" +
+	"\x05_descB\v\n" +
+	"\t_categoryB\n" +
+	"\n" +
+	"\b_contentB\x0e\n" +
+	"\f_is_featured\"<\n" +
 	"\x11DeletePostRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"H\n" +
@@ -1295,14 +1422,15 @@ const file_protos_post_proto_rawDesc = "" +
 	"\x12CountPostsResponse\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\rR\x05total\x12\x18\n" +
 	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage2\xe5\x06\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage2\x9e\a\n" +
 	"\vPostService\x129\n" +
 	"\n" +
 	"CreatePost\x12\x17.post.CreatePostRequest\x1a\x12.post.PostResponse\x123\n" +
 	"\aGetPost\x12\x14.post.GetPostRequest\x1a\x12.post.PostResponse\x12?\n" +
 	"\rGetPostBySlug\x12\x1a.post.GetPostBySlugRequest\x1a\x12.post.PostResponse\x129\n" +
 	"\n" +
-	"UpdatePost\x12\x17.post.UpdatePostRequest\x1a\x12.post.PostResponse\x12?\n" +
+	"UpdatePost\x12\x17.post.UpdatePostRequest\x1a\x12.post.PostResponse\x127\n" +
+	"\tPatchPost\x12\x16.post.PatchPostRequest\x1a\x12.post.PostResponse\x12?\n" +
 	"\n" +
 	"DeletePost\x12\x17.post.DeletePostRequest\x1a\x18.post.DeletePostResponse\x12<\n" +
 	"\tListPosts\x12\x16.post.ListPostsRequest\x1a\x17.post.ListPostsResponse\x12A\n" +
@@ -1327,7 +1455,7 @@ func file_protos_post_proto_rawDescGZIP() []byte {
 	return file_protos_post_proto_rawDescData
 }
 
-var file_protos_post_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_protos_post_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_protos_post_proto_goTypes = []any{
 	(*Post)(nil),                      // 0: post.Post
 	(*CreatePostRequest)(nil),         // 1: post.CreatePostRequest
@@ -1335,53 +1463,56 @@ var file_protos_post_proto_goTypes = []any{
 	(*GetPostRequest)(nil),            // 3: post.GetPostRequest
 	(*GetPostBySlugRequest)(nil),      // 4: post.GetPostBySlugRequest
 	(*UpdatePostRequest)(nil),         // 5: post.UpdatePostRequest
-	(*DeletePostRequest)(nil),         // 6: post.DeletePostRequest
-	(*DeletePostResponse)(nil),        // 7: post.DeletePostResponse
-	(*DeletePostsRequest)(nil),        // 8: post.DeletePostsRequest
-	(*ListPostsRequest)(nil),          // 9: post.ListPostsRequest
-	(*ListPostsResponse)(nil),         // 10: post.ListPostsResponse
-	(*IncrementVisitRequest)(nil),     // 11: post.IncrementVisitRequest
-	(*GetFeaturedPostsRequest)(nil),   // 12: post.GetFeaturedPostsRequest
-	(*GetPostsByCategoryRequest)(nil), // 13: post.GetPostsByCategoryRequest
-	(*GetPostsByUserRequest)(nil),     // 14: post.GetPostsByUserRequest
-	(*SearchPostsRequest)(nil),        // 15: post.SearchPostsRequest
-	(*CountPostsRequest)(nil),         // 16: post.CountPostsRequest
-	(*CountPostsResponse)(nil),        // 17: post.CountPostsResponse
-	(*timestamppb.Timestamp)(nil),     // 18: google.protobuf.Timestamp
+	(*PatchPostRequest)(nil),          // 6: post.PatchPostRequest
+	(*DeletePostRequest)(nil),         // 7: post.DeletePostRequest
+	(*DeletePostResponse)(nil),        // 8: post.DeletePostResponse
+	(*DeletePostsRequest)(nil),        // 9: post.DeletePostsRequest
+	(*ListPostsRequest)(nil),          // 10: post.ListPostsRequest
+	(*ListPostsResponse)(nil),         // 11: post.ListPostsResponse
+	(*IncrementVisitRequest)(nil),     // 12: post.IncrementVisitRequest
+	(*GetFeaturedPostsRequest)(nil),   // 13: post.GetFeaturedPostsRequest
+	(*GetPostsByCategoryRequest)(nil), // 14: post.GetPostsByCategoryRequest
+	(*GetPostsByUserRequest)(nil),     // 15: post.GetPostsByUserRequest
+	(*SearchPostsRequest)(nil),        // 16: post.SearchPostsRequest
+	(*CountPostsRequest)(nil),         // 17: post.CountPostsRequest
+	(*CountPostsResponse)(nil),        // 18: post.CountPostsResponse
+	(*timestamppb.Timestamp)(nil),     // 19: google.protobuf.Timestamp
 }
 var file_protos_post_proto_depIdxs = []int32{
-	18, // 0: post.Post.created_at:type_name -> google.protobuf.Timestamp
-	18, // 1: post.Post.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 0: post.Post.created_at:type_name -> google.protobuf.Timestamp
+	19, // 1: post.Post.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: post.PostResponse.post:type_name -> post.Post
 	0,  // 3: post.ListPostsResponse.posts:type_name -> post.Post
 	1,  // 4: post.PostService.CreatePost:input_type -> post.CreatePostRequest
 	3,  // 5: post.PostService.GetPost:input_type -> post.GetPostRequest
 	4,  // 6: post.PostService.GetPostBySlug:input_type -> post.GetPostBySlugRequest
 	5,  // 7: post.PostService.UpdatePost:input_type -> post.UpdatePostRequest
-	6,  // 8: post.PostService.DeletePost:input_type -> post.DeletePostRequest
-	9,  // 9: post.PostService.ListPosts:input_type -> post.ListPostsRequest
-	11, // 10: post.PostService.IncrementVisit:input_type -> post.IncrementVisitRequest
-	12, // 11: post.PostService.GetFeaturedPosts:input_type -> post.GetFeaturedPostsRequest
-	13, // 12: post.PostService.GetPostsByCategory:input_type -> post.GetPostsByCategoryRequest
-	14, // 13: post.PostService.GetPostsByUser:input_type -> post.GetPostsByUserRequest
-	15, // 14: post.PostService.SearchPosts:input_type -> post.SearchPostsRequest
-	16, // 15: post.PostService.CountPosts:input_type -> post.CountPostsRequest
-	8,  // 16: post.PostService.DeletePosts:input_type -> post.DeletePostsRequest
-	2,  // 17: post.PostService.CreatePost:output_type -> post.PostResponse
-	2,  // 18: post.PostService.GetPost:output_type -> post.PostResponse
-	2,  // 19: post.PostService.GetPostBySlug:output_type -> post.PostResponse
-	2,  // 20: post.PostService.UpdatePost:output_type -> post.PostResponse
-	7,  // 21: post.PostService.DeletePost:output_type -> post.DeletePostResponse
-	10, // 22: post.PostService.ListPosts:output_type -> post.ListPostsResponse
-	2,  // 23: post.PostService.IncrementVisit:output_type -> post.PostResponse
-	10, // 24: post.PostService.GetFeaturedPosts:output_type -> post.ListPostsResponse
-	10, // 25: post.PostService.GetPostsByCategory:output_type -> post.ListPostsResponse
-	10, // 26: post.PostService.GetPostsByUser:output_type -> post.ListPostsResponse
-	10, // 27: post.PostService.SearchPosts:output_type -> post.ListPostsResponse
-	17, // 28: post.PostService.CountPosts:output_type -> post.CountPostsResponse
-	7,  // 29: post.PostService.DeletePosts:output_type -> post.DeletePostResponse
-	17, // [17:30] is the sub-list for method output_type
-	4,  // [4:17] is the sub-list for method input_type
+	6,  // 8: post.PostService.PatchPost:input_type -> post.PatchPostRequest
+	7,  // 9: post.PostService.DeletePost:input_type -> post.DeletePostRequest
+	10, // 10: post.PostService.ListPosts:input_type -> post.ListPostsRequest
+	12, // 11: post.PostService.IncrementVisit:input_type -> post.IncrementVisitRequest
+	13, // 12: post.PostService.GetFeaturedPosts:input_type -> post.GetFeaturedPostsRequest
+	14, // 13: post.PostService.GetPostsByCategory:input_type -> post.GetPostsByCategoryRequest
+	15, // 14: post.PostService.GetPostsByUser:input_type -> post.GetPostsByUserRequest
+	16, // 15: post.PostService.SearchPosts:input_type -> post.SearchPostsRequest
+	17, // 16: post.PostService.CountPosts:input_type -> post.CountPostsRequest
+	9,  // 17: post.PostService.DeletePosts:input_type -> post.DeletePostsRequest
+	2,  // 18: post.PostService.CreatePost:output_type -> post.PostResponse
+	2,  // 19: post.PostService.GetPost:output_type -> post.PostResponse
+	2,  // 20: post.PostService.GetPostBySlug:output_type -> post.PostResponse
+	2,  // 21: post.PostService.UpdatePost:output_type -> post.PostResponse
+	2,  // 22: post.PostService.PatchPost:output_type -> post.PostResponse
+	8,  // 23: post.PostService.DeletePost:output_type -> post.DeletePostResponse
+	11, // 24: post.PostService.ListPosts:output_type -> post.ListPostsResponse
+	2,  // 25: post.PostService.IncrementVisit:output_type -> post.PostResponse
+	11, // 26: post.PostService.GetFeaturedPosts:output_type -> post.ListPostsResponse
+	11, // 27: post.PostService.GetPostsByCategory:output_type -> post.ListPostsResponse
+	11, // 28: post.PostService.GetPostsByUser:output_type -> post.ListPostsResponse
+	11, // 29: post.PostService.SearchPosts:output_type -> post.ListPostsResponse
+	18, // 30: post.PostService.CountPosts:output_type -> post.CountPostsResponse
+	8,  // 31: post.PostService.DeletePosts:output_type -> post.DeletePostResponse
+	18, // [18:32] is the sub-list for method output_type
+	4,  // [4:18] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -1392,13 +1523,14 @@ func file_protos_post_proto_init() {
 	if File_protos_post_proto != nil {
 		return
 	}
+	file_protos_post_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_protos_post_proto_rawDesc), len(file_protos_post_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
