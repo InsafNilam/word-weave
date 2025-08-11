@@ -1,71 +1,148 @@
-https://dev.to/dutchskull/setting-up-dynamic-environment-variables-with-vite-and-docker-5cmj
+# Frontend Service (Vite + React)
 
-# React + TypeScript + Vite
+## Overview
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend client for your microservices architecture, built with React and Vite. It communicates with backend services (such as User Service) via REST or gRPC-web.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- Fast development with Vite's hot module replacement (HMR)
+- React 18+ with functional components and hooks
+- Configurable environment variables for API endpoints
+- Supports Docker-based deployment with dynamic env injection
+- Uses `.env` files for local dev and runtime env vars for production
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+## Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- Node.js 18+
+- Docker (optional, for containerized deployment)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+---
+
+## Setup and Development
+
+### 1. Clone the repository
+
+```bash
+git clone <your-frontend-repo-url>
+cd frontend-service
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment variables
+
+Vite loads environment variables from `.env` files starting with `VITE_`. For example:
+
+```
+VITE_API_URL=http://localhost:5000/api
+```
+
+Create a `.env` file in your project root:
+
+```bash
+touch .env
+```
+
+Example `.env`:
+
+```env
+VITE_USER_SERVICE_URL=http://localhost:50052
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+### 4. Run development server
+
+```bash
+npm run dev
+```
+
+Open your browser at `http://localhost:5173`
+
+---
+
+## Using Environment Variables in Code
+
+Access variables prefixed with `VITE_` via `import.meta.env`:
 
 ```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+const userServiceUrl = import.meta.env.VITE_USER_SERVICE_URL;
+```
 
-export default tseslint.config([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+---
+
+## Dockerization with Dynamic Env Injection
+
+By default, Vite statically injects env vars at build time. To set env vars dynamically at container runtime:
+
+- [Dynamic Environment Variables with Vite and Docker](https://dev.to/dutchskull/setting-up-dynamic-environment-variables-with-vite-and-docker-5cmj)
+
+---
+
+## Dockerfile Example
+
+```Dockerfile
+# Build stage
+FROM node:18-alpine AS build
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+---
+
+## Scripts
+
+| Command           | Description                  |
+| ----------------- | ---------------------------- |
+| `npm run dev`     | Run development server (HMR) |
+| `npm run build`   | Build for production         |
+| `npm run preview` | Preview production build     |
+
+---
+
+## Troubleshooting
+
+- Ensure environment variables start with `VITE_` to be injected by Vite.
+- If env vars do not update in Docker, confirm your runtime injection strategy.
+- Ports: Dev server usually runs on `5173`; ensure no conflicts.
+- React app fetch failures: Check CORS and API URLs.
+
+---
+
+## License
+
+MIT (or your preferred license)
+
+---
+
+## Contact
+
+Your Name — [insafnilam.2000@gmail.com](mailto:insafnilam.2000@gmail.com)
+
+```
+
 ```
