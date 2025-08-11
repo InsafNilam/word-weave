@@ -248,6 +248,8 @@ services:
       - MONGO_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@user-db:27017/user_db
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - EVENT_SERVICE_HOST=${EVENT_SERVICE_ADDR}
+    ports:
+    - "${WEBHOOK_PORT}:${WEBHOOK_PORT}"
     expose:
       - "50051"
     depends_on:
