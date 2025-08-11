@@ -52,8 +52,16 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 		}
 	}
 
+	user, err := s.userClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		return &pb.PostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get user details: %v", err),
+		}, nil
+	}
+
 	post := &models.Post{
-		UserID:     req.UserId,
+		UserID:     user.GetMongoId(),
 		Img:        req.Img,
 		Title:      req.Title,
 		Slug:       slug,
@@ -63,7 +71,7 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 		IsFeatured: req.IsFeatured,
 	}
 
-	err := s.repo.Create(post)
+	err = s.repo.Create(post)
 	if err != nil {
 		return &pb.PostResponse{
 			Success: false,
@@ -151,8 +159,16 @@ func (s *PostServiceServer) UpdatePost(ctx context.Context, req *pb.UpdatePostRe
 		}, nil
 	}
 
+	user, err := s.userClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		return &pb.PostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get user details: %v", err),
+		}, nil
+	}
+
 	// Check if user owns the post
-	if existingPost.UserID != req.UserId {
+	if existingPost.UserID != user.GetMongoId() {
 		return &pb.PostResponse{
 			Success: false,
 			Message: "Unauthorized to update this post",
@@ -207,8 +223,16 @@ func (s *PostServiceServer) PatchPost(ctx context.Context, req *pb.PatchPostRequ
 		}, nil
 	}
 
+	user, err := s.userClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		return &pb.PostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get user details: %v", err),
+		}, nil
+	}
+
 	// Check if user owns the post
-	if existingPost.UserID != req.UserId {
+	if existingPost.UserID != user.GetMongoId() {
 		return &pb.PostResponse{
 			Success: false,
 			Message: "Unauthorized to update this post",
@@ -337,7 +361,15 @@ func (s *PostServiceServer) PatchPost(ctx context.Context, req *pb.PatchPostRequ
 }
 
 func (s *PostServiceServer) DeletePost(ctx context.Context, req *pb.DeletePostRequest) (*pb.DeletePostResponse, error) {
-	err := s.repo.Delete(uint(req.Id), req.UserId)
+	user, err := s.userClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		return &pb.DeletePostResponse{
+			Success: false,
+			Message: fmt.Sprintf("Failed to get user details: %v", err),
+		}, nil
+	}
+
+	err = s.repo.Delete(uint(req.Id), user.GetMongoId())
 	if err != nil {
 		return &pb.DeletePostResponse{
 			Success: false,
@@ -379,7 +411,14 @@ func (s *PostServiceServer) ListPosts(ctx context.Context, req *pb.ListPostsRequ
 		limit = 100 // Max limit
 	}
 
-	posts, total, err := s.repo.List(page, limit, req.Category, req.UserId)
+	user, err := s.userClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		return &pb.ListPostsResponse{
+			Success: false,
+		}, nil
+	}
+
+	posts, total, err := s.repo.List(page, limit, req.Category, user.GetMongoId())
 	if err != nil {
 		return &pb.ListPostsResponse{
 			Success: false,
@@ -502,7 +541,14 @@ func (s *PostServiceServer) GetPostsByUser(ctx context.Context, req *pb.GetPosts
 		limit = 100
 	}
 
-	posts, total, err := s.repo.GetByUser(req.UserId, page, limit)
+	user, err := s.userClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		return &pb.ListPostsResponse{
+			Success: false,
+		}, nil
+	}
+
+	posts, total, err := s.repo.GetByUser(user.GetMongoId(), page, limit)
 	if err != nil {
 		return &pb.ListPostsResponse{
 			Success: false,
@@ -574,7 +620,22 @@ func (s *PostServiceServer) CountPosts(ctx context.Context, req *pb.CountPostsRe
 }
 
 func (s *PostServiceServer) DeletePosts(ctx context.Context, req *pb.DeletePostsRequest) (*pb.DeletePostResponse, error) {
-	err := s.repo.DeletePosts(req.Ids, req.UserIds)
+	var mongoUserIds []string
+	if len(req.UserIds) > 0 {
+		mongoUserIds = make([]string, 0, len(req.UserIds))
+		for _, userId := range req.UserIds {
+			user, err := s.userClient.GetUser(ctx, userId)
+			if err != nil {
+				return &pb.DeletePostResponse{
+					Success: false,
+					Message: fmt.Sprintf("Failed to get user details for user %s: %v", userId, err),
+				}, nil
+			}
+			mongoUserIds = append(mongoUserIds, user.GetMongoId())
+		}
+	}
+
+	err := s.repo.DeletePosts(req.Ids, mongoUserIds)
 	if err != nil {
 		return &pb.DeletePostResponse{
 			Success: false,

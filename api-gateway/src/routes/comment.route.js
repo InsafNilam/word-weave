@@ -6,12 +6,12 @@ const router = express.Router();
 
 router.post("/", authorizeByRole([]), (req, res) => {
   const auth = req.auth() || {};
-  const userId = auth?.userId;
+  const user_id = auth?.userId;
 
   const { post_id, description } = req.body;
-  const comment = { post_id, description, user_id: userId };
+  const comment = { post_id, description, user_id };
 
-  commentClient.createComment(comment, (error, response) => {
+  commentClient.CreateComment(comment, (error, response) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -22,7 +22,7 @@ router.post("/", authorizeByRole([]), (req, res) => {
 router.get("/:id", (req, res) => {
   const id = req.params.id;
 
-  commentClient.getCommentsByPost({ id }, (error, response) => {
+  commentClient.GetComment({ id }, (error, response) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -31,11 +31,11 @@ router.get("/:id", (req, res) => {
 });
 
 router.get("/posts/:id", (req, res) => {
-  const postId = req.params.id;
+  const post_id = req.params.id;
   const { limit, offset } = req.query;
 
   commentClient.GetCommentsByPost(
-    { post_id: postId, limit, offset },
+    { post_id, limit, offset },
     (error, response) => {
       if (error) {
         return res.status(500).json({ error: error.message });
@@ -46,11 +46,11 @@ router.get("/posts/:id", (req, res) => {
 });
 
 router.get("/users/:id", (req, res) => {
-  const userId = req.params.id;
+  const user_id = req.params.id;
   const { limit, offset } = req.query;
 
   commentClient.GetCommentsByUser(
-    { user_id: userId, limit, offset },
+    { user_id, limit, offset },
     (error, response) => {
       if (error) {
         return res.status(500).json({ error: error.message });
@@ -61,21 +61,30 @@ router.get("/users/:id", (req, res) => {
 });
 
 router.patch("/:id", authorizeByRole([]), (req, res) => {
+  const auth = req.auth() || {};
+  const user_id = auth?.userId;
+
   const id = req.params.id;
   const { description } = req.body;
 
-  commentClient.UpdateComment({ id, description }, (error, response) => {
-    if (error) {
-      return res.status(500).json({ error: error.message });
+  commentClient.UpdateComment(
+    { id, user_id, description },
+    (error, response) => {
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+      res.status(200).json(response);
     }
-    res.status(200).json(response);
-  });
+  );
 });
 
 router.delete("/:id", authorizeByRole([]), (req, res) => {
+  const auth = req.auth() || {};
+  const user_id = auth?.userId;
+
   const id = req.params.id;
 
-  commentClient.DeleteComment({ id }, (error, response) => {
+  commentClient.DeleteComment({ id, user_id }, (error, response) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -84,9 +93,9 @@ router.delete("/:id", authorizeByRole([]), (req, res) => {
 });
 
 router.get("/posts/:id/comments", (req, res) => {
-  const postId = req.params.id;
+  const post_id = req.params.id;
 
-  commentClient.GetCommentCount({ post_id: postId }, (error, response) => {
+  commentClient.GetCommentCount({ post_id }, (error, response) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -95,9 +104,9 @@ router.get("/posts/:id/comments", (req, res) => {
 });
 
 router.delete("/bulk", authorizeByRole([]), (req, res) => {
-  const { comment_ids } = req.body;
+  const { post_ids, user_ids } = req.body;
 
-  commentClient.DeleteComments({ ids: comment_ids }, (error, response) => {
+  commentClient.DeleteComments({ post_ids, user_ids }, (error, response) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }

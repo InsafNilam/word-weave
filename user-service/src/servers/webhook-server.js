@@ -100,7 +100,7 @@ export const createWebhookServer = () => {
  * @returns {Promise<Server>} Promise that resolves to the HTTP server instance
  */
 export const startWebhookServer = (app) => {
-  const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 8001;
+  const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 8081;
   const HOST = process.env.WEBHOOK_HOST || "localhost";
 
   return new Promise((resolve, reject) => {

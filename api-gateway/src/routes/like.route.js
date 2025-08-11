@@ -14,7 +14,10 @@ router.get("/health", (req, res) => {
 });
 
 router.post("/", authorizeByRole([]), (req, res) => {
-  const { user_id, post_id } = req.body;
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
+  const { post_id } = req.body;
 
   likeClient.LikePost({ user_id, post_id }, (error, response) => {
     if (error) {
@@ -25,7 +28,10 @@ router.post("/", authorizeByRole([]), (req, res) => {
 });
 
 router.delete("/", authorizeByRole([]), (req, res) => {
-  const { user_id, post_id } = req.body;
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
+  const { post_id } = req.body;
 
   likeClient.UnlikePost({ user_id, post_id }, (error, response) => {
     if (error) {
@@ -47,39 +53,35 @@ router.delete("/posts/unlike", authorizeByRole([]), (req, res) => {
 });
 
 router.get("/users/:id", (req, res) => {
-  const userId = req.params.id;
+  const auth = req.auth?.() || {};
+  const user_id = req.params.id || auth.userId;
+
   const { limit, offset } = req.query;
 
-  likeClient.GetUserLikes(
-    { user_id: userId, limit, offset },
-    (error, response) => {
-      if (error) {
-        return res.status(500).json({ error: error.message });
-      }
-      res.json(response);
+  likeClient.GetUserLikes({ user_id, limit, offset }, (error, response) => {
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
-  );
+    res.json(response);
+  });
 });
 
 router.get("/posts/:id", (req, res) => {
-  const postId = req.params.id;
+  const post_id = req.params.id;
   const { limit, offset } = req.query;
 
-  likeClient.GetPostLikes(
-    { post_id: postId, limit, offset },
-    (error, response) => {
-      if (error) {
-        return res.status(500).json({ error: error.message });
-      }
-      res.json(response);
+  likeClient.GetPostLikes({ post_id, limit, offset }, (error, response) => {
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
-  );
+    res.json(response);
+  });
 });
 
 router.get("/posts/:id/likes", (req, res) => {
-  const postId = req.params.id;
+  const post_id = req.params.id;
 
-  likeClient.GetLikesCount({ post_id: postId }, (error, response) => {
+  likeClient.GetLikesCount({ post_id }, (error, response) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -88,18 +90,15 @@ router.get("/posts/:id/likes", (req, res) => {
 });
 
 router.get("/users/:user/posts/:post", (req, res) => {
-  const userId = req.params.user;
-  const postId = req.params.post;
+  const user_id = req.params.user;
+  const post_id = req.params.post;
 
-  likeClient.IsPostLiked(
-    { post_id: postId, user_id: userId },
-    (error, response) => {
-      if (error) {
-        return res.status(500).json({ error: error.message });
-      }
-      res.json(response);
+  likeClient.IsPostLiked({ post_id, user_id }, (error, response) => {
+    if (error) {
+      return res.status(500).json({ error: error.message });
     }
-  );
+    res.json(response);
+  });
 });
 
 export default router;

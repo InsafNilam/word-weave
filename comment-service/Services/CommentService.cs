@@ -56,9 +56,8 @@ namespace CommentService.GrpcServices
                     };
                 }
 
-                // Validate user exists
-                var isValidUser = await _externalServices.ValidateUserAsync(request.UserId);
-                if (!isValidUser)
+                var user = await _externalServices.GetUserAsync(request.UserId);
+                if (user == null)
                 {
                     return new CommentResponse
                     {
@@ -81,7 +80,7 @@ namespace CommentService.GrpcServices
                 // Create comment
                 var comment = new CommentService.Models.Comment
                 {
-                    UserId = request.UserId,
+                    UserId = user.MongoId,
                     PostId = request.PostId,
                     Description = request.Description.Trim()
                 };
@@ -195,10 +194,20 @@ namespace CommentService.GrpcServices
                     };
                 }
 
+                var user = await _externalServices.GetUserAsync(request.UserId);
+                if (user == null)
+                {
+                    return new GetCommentsResponse
+                    {
+                        Success = false,
+                        Message = "Invalid or non-existent user"
+                    };
+                }
+
                 var page = Math.Max(1, request.Page);
                 var pageSize = Math.Min(Math.Max(1, request.PageSize), 100);
 
-                var (comments, totalCount) = await _commentRepository.GetByUserIdAsync(request.UserId, page, pageSize);
+                var (comments, totalCount) = await _commentRepository.GetByUserIdAsync(user.MongoId, page, pageSize);
 
                 var response = new GetCommentsResponse
                 {
@@ -243,6 +252,16 @@ namespace CommentService.GrpcServices
                     };
                 }
 
+                var user = await _externalServices.GetUserAsync(request.UserId);
+                if (user == null)
+                {
+                    return new CommentResponse
+                    {
+                        Success = false,
+                        Message = "Invalid or non-existent user"
+                    };
+                }
+
                 if (string.IsNullOrWhiteSpace(request.Description) || request.Description.Length > 1000)
                 {
                     return new CommentResponse
@@ -264,7 +283,7 @@ namespace CommentService.GrpcServices
                 }
 
                 // Verify user owns the comment
-                if (existingComment.UserId != request.UserId)
+                if (existingComment.UserId != user.MongoId)
                 {
                     return new CommentResponse
                     {
@@ -324,6 +343,16 @@ namespace CommentService.GrpcServices
                     };
                 }
 
+                var user = await _externalServices.GetUserAsync(request.UserId);
+                if (user == null)
+                {
+                    return new DeleteCommentResponse
+                    {
+                        Success = false,
+                        Message = "Invalid or non-existent user"
+                    };
+                }
+
                 // Get existing comment to verify ownership
                 var existingComment = await _commentRepository.GetByIdAsync(request.Id);
                 if (existingComment == null)
@@ -336,7 +365,7 @@ namespace CommentService.GrpcServices
                 }
 
                 // Verify user owns the comment
-                if (existingComment.UserId != request.UserId)
+                if (existingComment.UserId != user.MongoId)
                 {
                     return new DeleteCommentResponse
                     {
@@ -417,9 +446,27 @@ namespace CommentService.GrpcServices
                     };
                 }
 
+                var mongoUserIds = new List<string>();
+                if (request.UserIds != null && request.UserIds.Count > 0)
+                {
+                    foreach (var userId in request.UserIds)
+                    {
+                        var user = await _externalServices.GetUserAsync(userId);
+                        if (user == null)
+                        {
+                            return new DeleteCommentResponse
+                            {
+                                Success = false,
+                                Message = $"User {userId} not found"
+                            };
+                        }
+                        mongoUserIds.Add(user.MongoId);
+                    }
+                }
+
                 // Pass to repository to handle conditional deletion
                 bool deletedCount = await _commentRepository.DeleteMultipleAsync(
-                    request.UserIds != null ? request.UserIds.ToList() : new List<string>(),
+                    mongoUserIds,
                     request.PostIds != null ? request.PostIds.ToList() : new List<uint>()
                 );
 

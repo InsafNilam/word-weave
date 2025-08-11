@@ -1,9 +1,9 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import User from "../models/user.model.js";
 import EventServiceClient from "../clients/event.client.js";
 import { createClerkClient } from "@clerk/backend";
+import User from "../models/user.model.js";
 import {
   getGrpcErrorCode,
   normalizeToArray,
@@ -78,22 +78,37 @@ export const userService = {
       }
 
       // Fetch users from Clerk
-      const result = await clerkClient.users.getUserList(filterOptions);
+      const clerkResult = await clerkClient.users.getUserList(filterOptions);
 
-      if (!result || !Array.isArray(result.data)) {
+      if (!clerkResult || !Array.isArray(clerkResult.data)) {
         throw new Error("Invalid response from Clerk API");
       }
 
-      // Transform user data
-      const users = result.data.map((user) => transformUser(user));
+      // 2️⃣ Get local DB users for enrichment
+      const clerkIds = clerkResult.data.map((u) => u.id);
+      const localUsers = await User.find({
+        clerkUserId: { $in: clerkIds },
+      }).lean();
+
+      const localUserMap = new Map(localUsers.map((u) => [u.clerkUserId, u]));
+
+      // Merge Clerk + local DB data
+      const users = clerkResult.data.map((clerkUser) => {
+        const localData = localUserMap.get(clerkUser.id);
+        return transformUser({
+          ...clerkUser,
+          _id: localData._id || null,
+          bio: localData.bio || null,
+        });
+      });
 
       // Success response
       callback(null, {
         users,
-        total_count: result.totalCount || 0,
+        total_count: clerkResult.totalCount || 0,
         limit: parsedLimit,
         offset: parsedOffset,
-        has_more: parsedOffset + parsedLimit < (result.totalCount || 0),
+        has_more: parsedOffset + parsedLimit < (clerkResult.totalCount || 0),
         message: "Users retrieved successfully",
       });
     } catch (error) {
@@ -118,7 +133,20 @@ export const userService = {
         throw new Error("User ID is required");
       }
 
-      const user = await clerkClient.users.getUser(user_id);
+      const clerkUser = await clerkClient.users.getUser(user_id);
+      if (!clerkUser) {
+        throw new Error(`User not found in Clerk: ${user_id}`);
+      }
+
+      // Fetch local DB user
+      const localUser = await User.findOne({ clerkUserId: user_id }).lean();
+
+      // Merge Clerk + local DB data
+      const user = {
+        ...clerkUser,
+        _id: localUser._id || null,
+        bio: localUser.bio || null,
+      };
 
       callback(null, {
         user: transformUser(user),
@@ -174,13 +202,23 @@ export const userService = {
         publicMetadata: role ? { role } : {},
       });
 
+      // Fetch local DB user
+      const localUser = await User.findOne({ clerkUserId: newUser.id }).lean();
+      // Merge Clerk + local DB data
+      const user = {
+        ...clerkUser,
+        _id: localUser._id || null,
+        bio: localUser.bio || null,
+      };
+
       // Publish Event
       await this.eventClient.publishEvent({
-        aggregateId: newUser.id,
+        aggregateId: user._id || user.id,
         aggregateType: "User",
         eventType: "user.created",
         eventData: {
-          userId: newUser.id,
+          userId: user._id,
+          clerkId: user.id,
           email: newUser.emailAddresses[0]?.emailAddress,
           username: newUser.username,
           firstName: newUser.firstName,
@@ -194,7 +232,7 @@ export const userService = {
       });
 
       callback(null, {
-        user: transformUser(newUser),
+        user: transformUser(user),
         message: "User created successfully",
       });
     } catch (error) {
@@ -214,7 +252,8 @@ export const userService = {
 
   async UpdateUser(call, callback) {
     try {
-      const { user_id, username, first_name, last_name, role } = call.request;
+      const { user_id, username, first_name, last_name, role, bio } =
+        call.request;
 
       if (!user_id) {
         throw new Error("User ID is required");
@@ -227,20 +266,39 @@ export const userService = {
         );
       }
 
-      const updatedUser = await clerkClient.users.updateUser(user_id, {
-        username,
-        firstName: first_name,
-        lastName: last_name,
-        publicMetadata: role ? { role } : {},
+      const updatedClerkUser = await clerkClient.users.updateUser(user_id, {
+        ...(username && { username }),
+        ...(first_name && { firstName: first_name }),
+        ...(last_name && { lastName: last_name }),
+        ...(role && { publicMetadata: { role } }),
       });
+
+      let updatedLocalUser = null;
+      if (bio || username) {
+        updatedLocalUser = await User.findOneAndUpdate(
+          { clerkUserId: user_id },
+          {
+            ...(username && { username }),
+            ...(bio && { bio }),
+          },
+          { new: true, upsert: false }
+        ).lean();
+      }
+
+      const updatedUser = {
+        ...updatedClerkUser,
+        _id: updatedLocalUser?._id || null,
+        bio: updatedLocalUser?.bio || null,
+      };
 
       // Publish Event
       await eventClient.publishEvent({
-        aggregateId: updatedUser.id,
+        aggregateId: updatedUser._id,
         aggregateType: "User",
         eventType: "user.updated",
         eventData: {
-          userId: updatedUser.id,
+          userId: updatedUser._id,
+          clerkId: updatedUser.id,
           email: updatedUser.emailAddresses[0]?.emailAddress,
           username: updatedUser.username,
           firstName: updatedUser.firstName,
@@ -280,15 +338,26 @@ export const userService = {
         throw new Error("User ID is required");
       }
 
-      const deletedUser = await clerkClient.users.deleteUser(user_id);
+      // Fetch local DB user
+      const localDeletedUser = await User.findOne({
+        clerkUserId: user_id,
+      }).lean();
+      const clerkDeletedUser = await clerkClient.users.deleteUser(user_id);
+
+      const deletedUser = {
+        ...clerkDeletedUser,
+        _id: localDeletedUser._id || null,
+        bio: localDeletedUser.bio || null,
+      };
 
       // Publish Event
       await eventClient.publishEvent({
-        aggregateId: deletedUser.id,
+        aggregateId: deletedUser._id,
         aggregateType: "User",
         eventType: "user.deleted",
         eventData: {
-          userId: deletedUser.id,
+          userId: localDeletedUser._id,
+          clerkId: deletedUser.id,
           email: deletedUser.emailAddresses[0]?.emailAddress,
           username: deletedUser.username,
           firstName: deletedUser.firstName,
@@ -372,14 +441,24 @@ export const userService = {
       const updatedUser = await clerkClient.users.updateUserMetadata(user_id, {
         publicMetadata: { role },
       });
+      // Fetch local DB user
+      const localUser = await User.findOne({ clerkUserId: user_id }).lean();
+
+      // Merge local user data with updated user data
+      const user = {
+        ...updatedUser,
+        _id: localUser._id || null,
+        bio: localUser.bio || null,
+      };
 
       // Publish Event
       await eventClient.publishEvent({
-        aggregateId: updatedUser.id,
+        aggregateId: user._id,
         aggregateType: "User",
         eventType: "user.updated",
         eventData: {
-          userId: updatedUser.id,
+          userId: localUser._id,
+          clerkId: updatedUser.id,
           role: updatedUser.publicMetadata?.role,
           updatedAt: updatedUser.updatedAt,
         },
@@ -391,7 +470,7 @@ export const userService = {
       });
 
       callback(null, {
-        user: transformUser(updatedUser),
+        user: transformUser(user),
         message: "User role updated successfully",
       });
     } catch (error) {

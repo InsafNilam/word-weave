@@ -12,15 +12,17 @@ export const normalizeToArray = (val) => {
 
 // Helper method to transform user data
 export const transformUser = (user) => {
-  if (!user || !user.id) {
-    throw new Error("Invalid user data received from Clerk");
+  if (!user || !(user._id || user.id)) {
+    throw new Error("Invalid user data received");
   }
 
   return {
-    id: user.id,
+    id: user._id || "",
+    clerkUserId: user.id || "",
     username: user.username || "",
     email: user.emailAddresses?.[0]?.emailAddress || "",
     image_url: user.hasImage ? user.imageUrl : "",
+    bio: user.bio || "",
     role: user.publicMetadata?.role || "user",
     created_at: user.createdAt ? new Date(user.createdAt).toISOString() : null,
     updated_at: user.updatedAt ? new Date(user.updatedAt).toISOString() : null,

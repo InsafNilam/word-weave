@@ -128,8 +128,9 @@ func (x *GetUserResponse) GetUser() *User {
 type User struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	MongoId       string                 `protobuf:"bytes,2,opt,name=mongo_id,json=_id,proto3" json:"mongo_id,omitempty"`
+	Username      string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -171,6 +172,13 @@ func (x *User) GetId() string {
 	return ""
 }
 
+func (x *User) GetMongoId() string {
+	if x != nil {
+		return x.MongoId
+	}
+	return ""
+}
+
 func (x *User) GetUsername() string {
 	if x != nil {
 		return x.Username
@@ -196,11 +204,12 @@ const file_protos_user_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1e\n" +
 	"\x04user\x18\x03 \x01(\v2\n" +
-	".user.UserR\x04user\"H\n" +
+	".user.UserR\x04user\"_\n" +
 	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email2E\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x15\n" +
+	"\bmongo_id\x18\x02 \x01(\tR\x03_id\x12\x1a\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12\x14\n" +
+	"\x05email\x18\x04 \x01(\tR\x05email2E\n" +
 	"\vUserService\x126\n" +
 	"\aGetUser\x12\x14.user.GetUserRequest\x1a\x15.user.GetUserResponseB\x0fZ\rprotos/userpbb\x06proto3"
 

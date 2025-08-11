@@ -28,7 +28,11 @@ router.get("/:id", (req, res) => {
 });
 
 router.post("/", authorizeByRole([]), (req, res) => {
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
   const postData = req.body;
+  postData.user_id = user_id;
 
   postClient.CreatePost(postData, (err, response) => {
     if (err) {
@@ -39,8 +43,10 @@ router.post("/", authorizeByRole([]), (req, res) => {
 });
 
 router.post("/:id/like", authorizeByRole([]), (req, res) => {
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
   const { id } = req.params;
-  const { user_id } = req.body;
 
   likeClient.LikePost({ post_id: id, user_id }, (err, response) => {
     if (err) {
@@ -51,8 +57,10 @@ router.post("/:id/like", authorizeByRole([]), (req, res) => {
 });
 
 router.delete("/:id/unlike", authorizeByRole([]), (req, res) => {
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
   const { id } = req.params;
-  const { user_id } = req.body;
 
   likeClient.UnlikePost({ post_id: id, user_id }, (err, response) => {
     if (err) {
@@ -63,8 +71,12 @@ router.delete("/:id/unlike", authorizeByRole([]), (req, res) => {
 });
 
 router.put("/:id", authorizeByRole([]), (req, res) => {
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
   const { id } = req.params;
   const postData = req.body;
+  postData.user_id = user_id;
 
   postClient.UpdatePost({ id, ...postData }, (err, response) => {
     if (err) {
@@ -75,8 +87,12 @@ router.put("/:id", authorizeByRole([]), (req, res) => {
 });
 
 router.patch("/:id", authorizeByRole([]), (req, res) => {
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
   const { id } = req.params;
   const postData = req.body;
+  postData.user_id = user_id;
 
   // Filter out undefined/null values for true PATCH behavior
   const filteredData = Object.fromEntries(
@@ -88,7 +104,7 @@ router.patch("/:id", authorizeByRole([]), (req, res) => {
   postClient.PatchPost(
     {
       id: parseInt(id),
-      user_id: req.user?.id,
+      user_id: user_id,
       ...filteredData,
     },
     (err, response) => {
@@ -101,8 +117,10 @@ router.patch("/:id", authorizeByRole([]), (req, res) => {
 });
 
 router.delete("/:id", authorizeByRole([]), (req, res) => {
+  const auth = req.auth?.() || {};
+  const user_id = req.body.user_id || auth.userId;
+
   const { id } = req.params;
-  const { user_id } = req.body;
 
   postClient.DeletePost({ id, user_id }, (err, response) => {
     if (err) {

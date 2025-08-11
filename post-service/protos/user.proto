@@ -16,6 +16,7 @@ message GetUserResponse {
 
 message User {
   string id = 1;
-  string username = 2;
-  string email = 3;
+  string mongo_id = 2 [ json_name = "_id" ];
+  string username = 3;
+  string email = 4;
 }
