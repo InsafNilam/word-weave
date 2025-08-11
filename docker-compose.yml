@@ -175,7 +175,7 @@ services:
     environment:
       ASSET_DIR: /var/www/html
       APP_PREFIX: PREFIX_
-      PREFIX_API_URL : http://api-gateway:8080
+      PREFIX_API_URL : http://localhost:8080
       PREFIX_IK_URL_ENDPOINT : ${IMAGEKIT_URL_ENDPOINT}
       PREFIX_IK_PUBLIC_KEY : ${IMAGEKIT_PUBLIC_KEY}
       PREFIX_CLERK_PUBLISHABLE_KEY : ${CLERK_PUBLISHABLE_KEY}
@@ -515,10 +515,10 @@ services:
       - "50056"
     environment:
       # ImageKit Configuration
-      - IK_PRIVATE_KEY=${IMAGEKIT_PRIVATE_KEY}
-      - IK_PUBLIC_KEY=${IMAGEKIT_PUBLIC_KEY}
-      - IK_URL_ENDPOINT=${IMAGEKIT_URL_ENDPOINT}
-      
+      - IMAGEKIT_PRIVATE_KEY=${IMAGEKIT_PRIVATE_KEY}
+      - IMAGEKIT_PUBLIC_KEY=${IMAGEKIT_PUBLIC_KEY}
+      - IMAGEKIT_URL_ENDPOINT=${IMAGEKIT_URL_ENDPOINT}
+
       # gRPC Configuration
       - GRPC_PORT=50056
       - GRPC_HOST=0.0.0.0
