@@ -23,6 +23,12 @@ service PostService {
   rpc DeletePosts(DeletePostsRequest) returns (DeletePostResponse);
 }
 
+message Author {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+}
+
 message Post {
   uint32 id = 1;
   string user_id = 2;
@@ -34,8 +40,9 @@ message Post {
   string content = 8;
   bool is_featured = 9;
   uint32 visit = 10;
-  google.protobuf.Timestamp created_at = 11;
-  google.protobuf.Timestamp updated_at = 12;
+  Author author = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
 }
 
 message CreatePostRequest {

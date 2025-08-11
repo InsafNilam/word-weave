@@ -14,6 +14,7 @@ from src.utils.exceptions import (
     BatchOperationError,
     convert_to_grpc_error,
 )
+from src.config.settings import settings
 
 
 class MediaServiceImpl(media_pb2_grpc.MediaServiceServicer, LoggerMixin):
@@ -38,6 +39,7 @@ class MediaServiceImpl(media_pb2_grpc.MediaServiceServicer, LoggerMixin):
                 token=auth_params["token"],
                 expire=auth_params["expire"],
                 signature=auth_params["signature"],
+                public_key=settings.imagekit_public_key,
                 success=True,
                 error_message=""
             )

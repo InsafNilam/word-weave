@@ -140,6 +140,7 @@ export const userService = {
 
       // Fetch local DB user
       const localUser = await User.findOne({ clerkUserId: user_id }).lean();
+      console.log("Local user found:", localUser);
 
       // Merge Clerk + local DB data
       const user = {

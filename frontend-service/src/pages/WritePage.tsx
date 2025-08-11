@@ -92,7 +92,7 @@ const Write = () => {
       <h1 className="text-cl font-light">Create a New Post</h1>
       <form onSubmit={handleSubmit} className="flex flex-col gap-6 flex-1 mb-6">
         <Upload type="image" setProgress={setProgress} setData={setCover}>
-          <button className="w-max p-2 shadow-md rounded-xl text-sm text-gray-500 bg-white">
+          <button type="button" className="w-max p-2 shadow-md rounded-xl text-sm text-gray-500 bg-white">
             Add a cover image
           </button>
         </Upload>

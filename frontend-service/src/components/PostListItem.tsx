@@ -9,7 +9,7 @@ type Post = {
   desc: string;
   createdAt: string;
   category: string;
-  user: {
+  author: {
     username: string;
   };
 }
@@ -31,7 +31,7 @@ const PostListItem = ({ post }: { post: Post }) => {
         </Link>
         <div className="flex items-center gap-2 text-gray-400 text-sm">
           <span>Written by</span>
-          <Link className="text-blue-800" to={`/posts?author=${post.user.username}`}>{post.user.username}</Link>
+          <Link className="text-blue-800" to={`/posts?author=${post.author.username}`}>{post.author.username}</Link>
           <span>on</span>
           <Link to={`/posts?cat=${post.category}`} className="text-blue-800">{post.category}</Link>
           <span>{format(post.createdAt)}</span>

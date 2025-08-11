@@ -19,7 +19,7 @@ interface Post {
   img?: string;
   category: string;
   createdAt: string;
-  user: User;
+  author: User;
 }
 
 const fetchPost = async (slug: string | undefined): Promise<Post> => {
@@ -49,7 +49,7 @@ const PostDetailsPage = () => {
           </h1>
           <div className="flex items-center gap-2 text-gray-400 text-sm">
             <span>Written by</span>
-            <Link to="#" className="text-blue-800">{data.user.username}</Link>
+            <Link to="#" className="text-blue-800">{data.author.username}</Link>
             <span>on</span>
             <Link to="#" className="text-blue-800">{data.category}</Link>
             <span>{format(data.createdAt)}</span>
@@ -156,15 +156,15 @@ const PostDetailsPage = () => {
           <h1 className="mb-4 text-sm font-medium">Author</h1>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-8">
-              {data.user.img && (
+              {data.author.img && (
                 <Image
-                  src={data.user.img}
+                  src={data.author.img}
                   className="w-12 h-12 rounded-full object-cover"
                   w={48}
                   h={48}
                 />
               )}
-              <Link to="#" className="text-blue-800">{data.user.username}</Link>
+              <Link to="#" className="text-blue-800">{data.author.username}</Link>
             </div>
             <p className="text-sm text-gray-500">
               Lorem ipsum dolor sit amet consectetur

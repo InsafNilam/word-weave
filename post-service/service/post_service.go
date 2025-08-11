@@ -695,7 +695,28 @@ func (s *PostServiceServer) buildChangesJSON(updatedFields []string, oldValues m
 
 // Helper function to convert model to proto
 func (s *PostServiceServer) modelToProto(post *models.Post) *pb.Post {
-	return &pb.Post{
+	user, err := s.userClient.GetUser(context.Background(), post.UserID)
+
+	if err != nil {
+		return &pb.Post{
+			Id:         uint32(post.ID),
+			UserId:     post.UserID,
+			Img:        post.Img,
+			Title:      post.Title,
+			Slug:       post.Slug,
+			Desc:       post.Desc,
+			Category:   post.Category,
+			Content:    post.Content,
+			IsFeatured: post.IsFeatured,
+			Visit:      uint32(post.Visit),
+			Author:     nil,
+			CreatedAt:  timestamppb.New(post.CreatedAt),
+			UpdatedAt:  timestamppb.New(post.UpdatedAt),
+		}
+	}
+
+	// Create the protobuf Post object
+	pbPost := &pb.Post{
 		Id:         uint32(post.ID),
 		UserId:     post.UserID,
 		Img:        post.Img,
@@ -709,6 +730,17 @@ func (s *PostServiceServer) modelToProto(post *models.Post) *pb.Post {
 		CreatedAt:  timestamppb.New(post.CreatedAt),
 		UpdatedAt:  timestamppb.New(post.UpdatedAt),
 	}
+
+	// Set the author from the user response
+	if user != nil {
+		pbPost.Author = &pb.Author{
+			Id:       user.Id,
+			Username: user.Username,
+			Email:    user.Email,
+		}
+	}
+
+	return pbPost
 }
 
 // Helper function to generate slug from title

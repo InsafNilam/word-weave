@@ -1,3 +1,4 @@
+import { useAuth } from "@clerk/clerk-react";
 import {
   ImageKitAbortError,
   ImageKitInvalidRequestError,
@@ -30,6 +31,7 @@ export interface UploadRef {
 
 const Upload = forwardRef<UploadRef, UploadProps>(
   ({ children, type, setProgress, setData, onSuccess, onError }, ref) => {
+    const { getToken } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
     const [loading, setLoading] = useState(false);
@@ -48,8 +50,14 @@ const Upload = forwardRef<UploadRef, UploadProps>(
       publicKey: string;
     }> => {
       try {
+        const clerkToken = await getToken();
+
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/media/auth`
+          `${import.meta.env.VITE_API_URL}/api/media/auth`, {
+          headers: {
+            Authorization: `Bearer ${clerkToken}`,
+          },
+        }
         );
 
         if (!response.ok) {
@@ -59,7 +67,7 @@ const Upload = forwardRef<UploadRef, UploadProps>(
           );
         }
 
-        const { signature, expire, token, publicKey } = await response.json();
+        const { signature, expire, token, public_key: publicKey } = await response.json();
         return { signature, expire, token, publicKey };
       } catch (error) {
         console.error("Authentication error:", error);
@@ -161,6 +169,7 @@ const Upload = forwardRef<UploadRef, UploadProps>(
         />
         <button
           type="button"
+          role="upload"
           onClick={() => fileInputRef.current?.click()}
           disabled={loading}
           className="cursor-pointer disabled:opacity-50"

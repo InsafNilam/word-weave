@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     """Application settings."""
     
     # ImageKit Configuration
-    imagekit_private_key: str = Field(..., env="IK_PRIVATE_KEY")
-    imagekit_public_key: str = Field(..., env="IK_PUBLIC_KEY")
-    imagekit_url_endpoint: str = Field(..., env="IK_URL_ENDPOINT")
+    imagekit_private_key: str = Field(..., alias="IK_PRIVATE_KEY")
+    imagekit_public_key: str = Field(..., alias="IK_PUBLIC_KEY")
+    imagekit_url_endpoint: str = Field(..., alias="IK_URL_ENDPOINT")
     
     # gRPC Server Configuration
     grpc_port: int = Field(50056, env="GRPC_PORT")
@@ -33,7 +33,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-
 
 # Global settings instance
 settings = Settings()
