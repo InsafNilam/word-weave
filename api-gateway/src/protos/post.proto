@@ -137,9 +137,15 @@ message GetPostsByUserRequest {
 }
 
 message SearchPostsRequest {
-  string query = 1;
-  uint32 page = 2;
-  uint32 limit = 3;
+  optional string query = 1;
+  optional string category = 2;
+  optional string title = 3;
+  optional string slug = 4;
+  optional string author = 5;
+  uint32 page = 6;
+  uint32 limit = 7;
+  string sort_by = 8;
+  string sort_order = 9;
 }
 
 message CountPostsRequest {

@@ -4,7 +4,10 @@ package user;
 
 option go_package = "protos/userpb";
 
-service UserService { rpc GetUser(GetUserRequest) returns (GetUserResponse); }
+service UserService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetLocalUser(GetUserRequest) returns (GetUserResponse);
+}
 
 message GetUserRequest { string user_id = 1; }
 
@@ -16,7 +19,6 @@ message GetUserResponse {
 
 message User {
   string id = 1;
-  string mongo_id = 2 [ json_name = "_id" ];
-  string username = 3;
-  string email = 4;
+  string username = 2;
+  string email = 3;
 }

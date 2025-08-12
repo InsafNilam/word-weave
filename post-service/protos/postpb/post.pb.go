@@ -1196,9 +1196,15 @@ func (x *GetPostsByUserRequest) GetLimit() uint32 {
 
 type SearchPostsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
-	Page          uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	Limit         uint32                 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	Query         *string                `protobuf:"bytes,1,opt,name=query,proto3,oneof" json:"query,omitempty"`
+	Category      *string                `protobuf:"bytes,2,opt,name=category,proto3,oneof" json:"category,omitempty"`
+	Title         *string                `protobuf:"bytes,3,opt,name=title,proto3,oneof" json:"title,omitempty"`
+	Slug          *string                `protobuf:"bytes,4,opt,name=slug,proto3,oneof" json:"slug,omitempty"`
+	Author        *string                `protobuf:"bytes,5,opt,name=author,proto3,oneof" json:"author,omitempty"`
+	Page          uint32                 `protobuf:"varint,6,opt,name=page,proto3" json:"page,omitempty"`
+	Limit         uint32                 `protobuf:"varint,7,opt,name=limit,proto3" json:"limit,omitempty"`
+	SortBy        string                 `protobuf:"bytes,8,opt,name=sort_by,json=sortBy,proto3" json:"sort_by,omitempty"`
+	SortOrder     string                 `protobuf:"bytes,9,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1234,8 +1240,36 @@ func (*SearchPostsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *SearchPostsRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
+	if x != nil && x.Query != nil {
+		return *x.Query
+	}
+	return ""
+}
+
+func (x *SearchPostsRequest) GetCategory() string {
+	if x != nil && x.Category != nil {
+		return *x.Category
+	}
+	return ""
+}
+
+func (x *SearchPostsRequest) GetTitle() string {
+	if x != nil && x.Title != nil {
+		return *x.Title
+	}
+	return ""
+}
+
+func (x *SearchPostsRequest) GetSlug() string {
+	if x != nil && x.Slug != nil {
+		return *x.Slug
+	}
+	return ""
+}
+
+func (x *SearchPostsRequest) GetAuthor() string {
+	if x != nil && x.Author != nil {
+		return *x.Author
 	}
 	return ""
 }
@@ -1252,6 +1286,20 @@ func (x *SearchPostsRequest) GetLimit() uint32 {
 		return x.Limit
 	}
 	return 0
+}
+
+func (x *SearchPostsRequest) GetSortBy() string {
+	if x != nil {
+		return x.SortBy
+	}
+	return ""
+}
+
+func (x *SearchPostsRequest) GetSortOrder() string {
+	if x != nil {
+		return x.SortOrder
+	}
+	return ""
 }
 
 type CountPostsRequest struct {
@@ -1482,11 +1530,23 @@ const file_protos_post_proto_rawDesc = "" +
 	"\x15GetPostsByUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\rR\x04page\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\rR\x05limit\"T\n" +
-	"\x12SearchPostsRequest\x12\x14\n" +
-	"\x05query\x18\x01 \x01(\tR\x05query\x12\x12\n" +
-	"\x04page\x18\x02 \x01(\rR\x04page\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\rR\x05limit\"i\n" +
+	"\x05limit\x18\x03 \x01(\rR\x05limit\"\xb8\x02\n" +
+	"\x12SearchPostsRequest\x12\x19\n" +
+	"\x05query\x18\x01 \x01(\tH\x00R\x05query\x88\x01\x01\x12\x1f\n" +
+	"\bcategory\x18\x02 \x01(\tH\x01R\bcategory\x88\x01\x01\x12\x19\n" +
+	"\x05title\x18\x03 \x01(\tH\x02R\x05title\x88\x01\x01\x12\x17\n" +
+	"\x04slug\x18\x04 \x01(\tH\x03R\x04slug\x88\x01\x01\x12\x1b\n" +
+	"\x06author\x18\x05 \x01(\tH\x04R\x06author\x88\x01\x01\x12\x12\n" +
+	"\x04page\x18\x06 \x01(\rR\x04page\x12\x14\n" +
+	"\x05limit\x18\a \x01(\rR\x05limit\x12\x17\n" +
+	"\asort_by\x18\b \x01(\tR\x06sortBy\x12\x1d\n" +
+	"\n" +
+	"sort_order\x18\t \x01(\tR\tsortOrderB\b\n" +
+	"\x06_queryB\v\n" +
+	"\t_categoryB\b\n" +
+	"\x06_titleB\a\n" +
+	"\x05_slugB\t\n" +
+	"\a_author\"i\n" +
 	"\x11CountPostsRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x1f\n" +
@@ -1599,6 +1659,7 @@ func file_protos_post_proto_init() {
 		return
 	}
 	file_protos_post_proto_msgTypes[7].OneofWrappers = []any{}
+	file_protos_post_proto_msgTypes[17].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

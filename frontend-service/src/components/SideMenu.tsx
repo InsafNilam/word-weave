@@ -13,10 +13,10 @@ const SideMenu = () => {
     }
   };
   const handleCategoryChange = (category: string) => {
-    if (searchParams.get("cat") !== category) {
+    if (searchParams.get("category") !== category) {
       setSearchParams({
         ...Object.fromEntries(searchParams.entries()),
-        cat: category,
+        category: category,
       });
     }
   };

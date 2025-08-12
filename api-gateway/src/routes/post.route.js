@@ -16,6 +16,51 @@ router.get("/", (req, res) => {
   });
 });
 
+router.get("/search", (req, res) => {
+  const {
+    query,
+    title,
+    slug,
+    category,
+    author,
+    page = "1",
+    limit = "10",
+    sort_by = "created_at",
+    sort_order = "desc",
+  } = req.query;
+
+  postClient.SearchPosts(
+    { query, title, slug, category, author, page, limit, sort_by, sort_order },
+    (err, response) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(response);
+    }
+  );
+});
+
+router.get("/featured", (req, res) => {
+  const { limit } = req.query;
+  postClient.GetFeaturedPosts({ limit }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
+router.get("/count", authorizeByRole(["admin"]), (req, res) => {
+  const { user_id, category, is_featured } = req.query;
+
+  postClient.CountPosts({ user_id, category, is_featured }, (err, response) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(response);
+  });
+});
+
 router.get("/:id", (req, res) => {
   const { id } = req.params;
 
@@ -127,38 +172,6 @@ router.delete("/:id", authorizeByRole([]), (req, res) => {
       return res.status(500).json({ error: err.message });
     }
     res.status(204).send();
-  });
-});
-
-router.get("/search", (req, res) => {
-  const { query } = req.query;
-
-  postClient.SearchPosts({ query }, (err, response) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(response);
-  });
-});
-
-router.get("/featured", (req, res) => {
-  const { limit } = req.query;
-  postClient.GetFeaturedPosts({ limit }, (err, response) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(response);
-  });
-});
-
-router.get("/count", authorizeByRole(["admin"]), (req, res) => {
-  const { user_id, category, is_featured } = req.query;
-
-  postClient.CountPosts({ user_id, category, is_featured }, (err, response) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
-    res.json(response);
   });
 });
 

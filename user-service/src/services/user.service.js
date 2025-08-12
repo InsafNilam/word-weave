@@ -140,7 +140,48 @@ export const userService = {
 
       // Fetch local DB user
       const localUser = await User.findOne({ clerkUserId: user_id }).lean();
-      console.log("Local user found:", localUser);
+
+      // Merge Clerk + local DB data
+      const user = {
+        ...clerkUser,
+        _id: localUser._id || null,
+        bio: localUser.bio || null,
+      };
+
+      callback(null, {
+        user: transformUser(user),
+        message: "User retrieved successfully",
+        success: true,
+      });
+    } catch (error) {
+      console.error("Error in GetUser:", {
+        message: error.message,
+        stack: error.stack,
+        request: call.request,
+      });
+
+      const grpcError = new Error(`Failed to get user: ${error.message}`);
+      grpcError.code = getGrpcErrorCode(error);
+
+      callback(grpcError);
+    }
+  },
+
+  async GetLocalUser(call, callback) {
+    try {
+      const { user_id } = call.request;
+
+      if (!user_id) {
+        throw new Error("User ID is required");
+      }
+
+      // Fetch local DB user
+      const localUser = await User.findById(user_id).lean();
+
+      const clerkUser = await clerkClient.users.getUser(localUser.clerkUserId);
+      if (!clerkUser) {
+        throw new Error(`User not found in Clerk: ${localUser.clerkUserId}`);
+      }
 
       // Merge Clerk + local DB data
       const user = {

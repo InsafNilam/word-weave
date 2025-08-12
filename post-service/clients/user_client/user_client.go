@@ -60,6 +60,23 @@ func (c *UserServiceClient) GetUser(ctx context.Context, userID string) (*pb.Use
 	return resp.User, nil
 }
 
+func (c *UserServiceClient) GetLocalUser(ctx context.Context, userID string) (*pb.User, error) {
+	req := &pb.GetUserRequest{
+		UserId: userID,
+	}
+
+	resp, err := c.client.GetLocalUser(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call GetLocalUser: %w", err)
+	}
+
+	if !resp.Success {
+		return nil, fmt.Errorf("user not found or error: %s", resp.Message)
+	}
+
+	return resp.User, nil
+}
+
 func (c *UserServiceClient) ValidateUser(ctx context.Context, userID string) (bool, error) {
 	req := &pb.GetUserRequest{
 		UserId: userID,

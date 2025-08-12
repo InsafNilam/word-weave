@@ -61,7 +61,7 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 	}
 
 	post := &models.Post{
-		UserID:     user.GetMongoId(),
+		UserID:     user.GetId(),
 		Img:        req.Img,
 		Title:      req.Title,
 		Slug:       slug,
@@ -168,7 +168,7 @@ func (s *PostServiceServer) UpdatePost(ctx context.Context, req *pb.UpdatePostRe
 	}
 
 	// Check if user owns the post
-	if existingPost.UserID != user.GetMongoId() {
+	if existingPost.UserID != user.GetId() {
 		return &pb.PostResponse{
 			Success: false,
 			Message: "Unauthorized to update this post",
@@ -232,7 +232,7 @@ func (s *PostServiceServer) PatchPost(ctx context.Context, req *pb.PatchPostRequ
 	}
 
 	// Check if user owns the post
-	if existingPost.UserID != user.GetMongoId() {
+	if existingPost.UserID != user.GetId() {
 		return &pb.PostResponse{
 			Success: false,
 			Message: "Unauthorized to update this post",
@@ -369,7 +369,7 @@ func (s *PostServiceServer) DeletePost(ctx context.Context, req *pb.DeletePostRe
 		}, nil
 	}
 
-	err = s.repo.Delete(uint(req.Id), user.GetMongoId())
+	err = s.repo.Delete(uint(req.Id), user.GetId())
 	if err != nil {
 		return &pb.DeletePostResponse{
 			Success: false,
@@ -411,14 +411,18 @@ func (s *PostServiceServer) ListPosts(ctx context.Context, req *pb.ListPostsRequ
 		limit = 100 // Max limit
 	}
 
-	user, err := s.userClient.GetUser(ctx, req.UserId)
-	if err != nil {
-		return &pb.ListPostsResponse{
-			Success: false,
-		}, nil
+	var userId string
+	if req.UserId != "" {
+		user, err := s.userClient.GetUser(ctx, req.UserId)
+		if err != nil {
+			return &pb.ListPostsResponse{
+				Success: false,
+			}, nil
+		}
+		userId = user.GetId()
 	}
 
-	posts, total, err := s.repo.List(page, limit, req.Category, user.GetMongoId())
+	posts, total, err := s.repo.List(page, limit, req.Category, userId)
 	if err != nil {
 		return &pb.ListPostsResponse{
 			Success: false,
@@ -548,7 +552,7 @@ func (s *PostServiceServer) GetPostsByUser(ctx context.Context, req *pb.GetPosts
 		}, nil
 	}
 
-	posts, total, err := s.repo.GetByUser(user.GetMongoId(), page, limit)
+	posts, total, err := s.repo.GetByUser(user.GetId(), page, limit)
 	if err != nil {
 		return &pb.ListPostsResponse{
 			Success: false,
@@ -583,7 +587,25 @@ func (s *PostServiceServer) SearchPosts(ctx context.Context, req *pb.SearchPosts
 		limit = 100
 	}
 
-	posts, total, err := s.repo.SearchPosts(req.Query, page, limit)
+	// Safely extract string values from potentially nil pointers
+	query := safeStringDeref(req.Query)
+	category := safeStringDeref(req.Category)
+	title := safeStringDeref(req.Title)
+	slug := safeStringDeref(req.Slug)
+	author := safeStringDeref(req.Author)
+
+	fmt.Println("Searching posts with the following parameters:")
+	fmt.Printf("Query: %s\n", query)
+	fmt.Printf("Category: %s\n", category)
+	fmt.Printf("Title: %s\n", title)
+	fmt.Printf("Slug: %s\n", slug)
+	fmt.Printf("Author: %s\n", author)
+	fmt.Printf("Sort By: %s\n", req.SortBy)
+	fmt.Printf("Sort Order: %s\n", req.SortOrder)
+	fmt.Printf("Page: %d\n", page)
+	fmt.Printf("Limit: %d\n", limit)
+
+	posts, total, err := s.repo.SearchPosts(query, category, title, slug, author, req.SortBy, req.SortOrder, page, limit)
 	if err != nil {
 		return &pb.ListPostsResponse{
 			Success: false,
@@ -631,7 +653,7 @@ func (s *PostServiceServer) DeletePosts(ctx context.Context, req *pb.DeletePosts
 					Message: fmt.Sprintf("Failed to get user details for user %s: %v", userId, err),
 				}, nil
 			}
-			mongoUserIds = append(mongoUserIds, user.GetMongoId())
+			mongoUserIds = append(mongoUserIds, user.GetId())
 		}
 	}
 
@@ -695,7 +717,7 @@ func (s *PostServiceServer) buildChangesJSON(updatedFields []string, oldValues m
 
 // Helper function to convert model to proto
 func (s *PostServiceServer) modelToProto(post *models.Post) *pb.Post {
-	user, err := s.userClient.GetUser(context.Background(), post.UserID)
+	user, err := s.userClient.GetLocalUser(context.Background(), post.UserID)
 
 	if err != nil {
 		return &pb.Post{
@@ -741,6 +763,13 @@ func (s *PostServiceServer) modelToProto(post *models.Post) *pb.Post {
 	}
 
 	return pbPost
+}
+
+func safeStringDeref(ptr *string) string {
+	if ptr == nil {
+		return ""
+	}
+	return *ptr
 }
 
 // Helper function to generate slug from title

@@ -118,6 +118,7 @@
 }
 .ql-editor {
   border: none !important;
+  @apply min-h-80;
 }
 
 @layer base {

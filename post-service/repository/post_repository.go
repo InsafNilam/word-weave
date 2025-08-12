@@ -21,7 +21,7 @@ type PostRepository interface {
 	GetFeatured(limit int) ([]models.Post, error)
 	GetByCategory(category string, page, limit int) ([]models.Post, int64, error)
 	GetByUser(userID string, page, limit int) ([]models.Post, int64, error)
-	SearchPosts(query string, page int, limit int) ([]models.Post, int64, error)
+	SearchPosts(query string, category string, title string, slug string, author string, sort_by string, sort_order string, page int, limit int) ([]models.Post, int64, error)
 	CountPosts(user_id, category string, is_featured bool) (int64, error)
 	DeletePosts(ids []uint32, userIds []string) error
 }
@@ -155,26 +155,48 @@ func (r *postRepository) GetByUser(userID string, page, limit int) ([]models.Pos
 	return posts, total, err
 }
 
-func (r *postRepository) SearchPosts(query string, page int, limit int) ([]models.Post, int64, error) {
+func (r *postRepository) SearchPosts(query string, category string, title string, slug string, author string, sort_by string, sort_order string, page int, limit int) ([]models.Post, int64, error) {
 	var posts []models.Post
 	var total int64
 
-	if query == "" {
-		return nil, 0, errors.New("search query cannot be empty")
+	dbQuery := r.db.Model(&models.Post{})
+	// Apply filters dynamically
+	if query != "" {
+		search := "%" + query + "%"
+		dbQuery = dbQuery.Where("title LIKE ? OR content LIKE ?", search, search)
+	}
+	if title != "" {
+		dbQuery = dbQuery.Where("title ILIKE ?", "%"+title+"%")
+	}
+	if category != "" {
+		dbQuery = dbQuery.Where("category = ?", category)
+	}
+	if slug != "" {
+		dbQuery = dbQuery.Where("slug = ?", slug)
+	}
+	if author != "" {
+		dbQuery = dbQuery.Where("user_id = ?", author)
 	}
 
-	searchQuery := "%" + query + "%"
+	// Count total matching records
+	if err := dbQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
 
-	// Build the query with search conditions
-	dbQuery := r.db.Model(&models.Post{}).
-		Where("title LIKE ?", searchQuery)
+	// Apply sorting
+	sortBy := "created_at"
+	if sort_by != "" {
+		sortBy = sort_by
+	}
+	sortOrder := "DESC"
+	if sort_order != "" {
+		sortOrder = sort_order
+	}
+	orderClause := fmt.Sprintf("%s %s", sortBy, sortOrder)
 
-	// Get total count
-	dbQuery.Count(&total)
-
-	// Apply pagination
+	// Apply pagination & fetch
 	offset := (page - 1) * limit
-	err := dbQuery.Offset(offset).Limit(limit).Order("created_at DESC").Find(&posts).Error
+	err := dbQuery.Offset(offset).Limit(limit).Order(orderClause).Find(&posts).Error
 
 	return posts, total, err
 }
