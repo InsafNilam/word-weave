@@ -9,7 +9,10 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\comment.proto" GrpcServices="Server" />
-    <Protobuf Include="Protos\services.proto" GrpcServices="Client" />
+    <!-- <Protobuf Include="Protos\services.proto" GrpcServices="Client" /> -->
+    <Protobuf Include="Protos\user.proto" GrpcServices="Client" />
+    <Protobuf Include="Protos\post.proto" GrpcServices="Client" />
+    <Protobuf Include="Protos\event.proto" GrpcServices="Client" />
   </ItemGroup>
 
   <ItemGroup>

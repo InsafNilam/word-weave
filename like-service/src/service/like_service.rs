@@ -108,7 +108,7 @@ impl LikesService for LikesServiceImpl {
             .user
             .as_ref()
             .ok_or_else(|| Status::not_found("User not found"))?
-            .mongo_id
+            .id
             .clone();
 
         // Validate post exists before allowing it to be liked
@@ -138,6 +138,7 @@ impl LikesService for LikesServiceImpl {
             }
             Err(e) => {
                 error!("Failed to like post: {}", e);
+                println!("Failed to like post: {}", e);
                 Err(e.into())
             }
         }
@@ -166,7 +167,7 @@ impl LikesService for LikesServiceImpl {
             .user
             .as_ref()
             .ok_or_else(|| Status::not_found("User not found"))?
-            .mongo_id
+            .id
             .clone();
 
         match self.repository.delete_like(&db_user_id, &req.post_id).await {
@@ -189,6 +190,7 @@ impl LikesService for LikesServiceImpl {
             }
             Err(e) => {
                 error!("Failed to unlike post: {}", e);
+                println!("Failed to unlike post: {}", e);
                 Err(e.into())
             }
         }
@@ -219,7 +221,7 @@ impl LikesService for LikesServiceImpl {
             .user
             .as_ref()
             .ok_or_else(|| Status::not_found("User not found"))?
-            .mongo_id
+            .id
             .clone();
 
         let params = PaginationParams::new(req.page, req.limit);
@@ -247,6 +249,7 @@ impl LikesService for LikesServiceImpl {
             }
             Err(e) => {
                 error!("Failed to get user likes: {}", e);
+                println!("Failed to get user likes: {}", e);
                 Err(e.into())
             }
         }
@@ -321,7 +324,7 @@ impl LikesService for LikesServiceImpl {
             .user
             .as_ref()
             .ok_or_else(|| Status::not_found("User not found"))?
-            .mongo_id
+            .id
             .clone();
 
         match self
@@ -399,7 +402,7 @@ impl LikesService for LikesServiceImpl {
                     .user
                     .as_ref()
                     .ok_or_else(|| Status::not_found("User not found"))?
-                    .mongo_id
+                    .id
                     .clone();
 
                 db_user_ids.push(db_user_id);

@@ -12,9 +12,9 @@ type CommentUser = {
 
 type CommentType = {
   id?: number;
-  user: CommentUser;
+  author: CommentUser;
   createdAt: string | Date;
-  desc: string;
+  description: string;
 };
 
 interface CommentProps {
@@ -53,19 +53,19 @@ const Comment = ({ comment, postId }: CommentProps) => {
   return (
     <div className="p-4 bg-slate-50 rounded-xl mb-8">
       <div className="flex items-center gap-4">
-        {comment.user.img && (
+        {comment.author?.img && (
           <Image
-            src={comment.user.img}
+            src={comment.author?.img}
             className="w-10 h-10 rounded-full object-cover"
             w={40}
           />
         )}
-        <span className="font-medium">{comment.user.username}</span>
+        <span className="font-medium">{comment.author.username}</span>
         <span className="text-sm text-gray-500">
           {format(comment.createdAt)}
         </span>
         {user &&
-          (comment.user.username === user.username || role === "admin") && (
+          (comment.author.username === user.username || role === "admin") && (
             <span
               className="text-xs text-red-300 hover:text-red-500 cursor-pointer"
               onClick={() => mutation.mutate()}
@@ -76,7 +76,7 @@ const Comment = ({ comment, postId }: CommentProps) => {
           )}
       </div>
       <div className="mt-4">
-        <p>{comment.desc}</p>
+        <p>{comment.description}</p>
       </div>
     </div>
   );

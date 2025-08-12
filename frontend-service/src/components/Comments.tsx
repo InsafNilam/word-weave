@@ -5,22 +5,22 @@ import { useAuth, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
 
 interface User {
-  img: string;
+  img?: string;
   username: string;
 }
 
 export interface CommentType {
   id: number;
-  desc: string;
+  description: string;
   createdAt: string | Date;
-  user: User;
+  author: User;
 }
 
 const fetchComments = async (postId: number): Promise<CommentType[]> => {
   const res = await axios.get(
     `${import.meta.env.VITE_API_URL}/api/comments/posts/${postId}`
   );
-  return res.data;
+  return res.data.comments;
 };
 
 interface CommentsProps {
@@ -39,14 +39,15 @@ const Comments = ({ postId }: CommentsProps) => {
   const queryClient = useQueryClient();
 
   interface NewComment {
-    desc: string;
+    description: string;
+    post_id: number;
   }
 
   const mutation = useMutation({
     mutationFn: async (newComment: NewComment) => {
       const token = await getToken();
       return axios.post(
-        `${import.meta.env.VITE_API_URL}/comments/${postId}`,
+        `${import.meta.env.VITE_API_URL}/api/comments`,
         newComment,
         {
           headers: {
@@ -68,7 +69,8 @@ const Comments = ({ postId }: CommentsProps) => {
     const formData = new FormData(e.currentTarget);
 
     const data: NewComment = {
-      desc: String(formData.get("desc") || ""),
+      description: String(formData.get("description") || ""),
+      post_id: postId,
     };
 
     mutation.mutate(data);
@@ -82,7 +84,7 @@ const Comments = ({ postId }: CommentsProps) => {
         className="flex items-center justify-between gap-8 w-full"
       >
         <textarea
-          name="desc"
+          name="description"
           placeholder="Write a comment..."
           className="w-full p-4 rounded-xl"
         />
@@ -99,9 +101,9 @@ const Comments = ({ postId }: CommentsProps) => {
           {mutation.isPending && (
             <Comment
               comment={{
-                desc: `${mutation.variables.desc} (Sending...)`,
+                description: `${mutation.variables.description} (Sending...)`,
                 createdAt: new Date(),
-                user: {
+                author: {
                   img: user?.imageUrl ?? "",
                   username: user?.username ?? "",
                 },

@@ -594,17 +594,6 @@ func (s *PostServiceServer) SearchPosts(ctx context.Context, req *pb.SearchPosts
 	slug := safeStringDeref(req.Slug)
 	author := safeStringDeref(req.Author)
 
-	fmt.Println("Searching posts with the following parameters:")
-	fmt.Printf("Query: %s\n", query)
-	fmt.Printf("Category: %s\n", category)
-	fmt.Printf("Title: %s\n", title)
-	fmt.Printf("Slug: %s\n", slug)
-	fmt.Printf("Author: %s\n", author)
-	fmt.Printf("Sort By: %s\n", req.SortBy)
-	fmt.Printf("Sort Order: %s\n", req.SortOrder)
-	fmt.Printf("Page: %d\n", page)
-	fmt.Printf("Limit: %d\n", limit)
-
 	posts, total, err := s.repo.SearchPosts(query, category, title, slug, author, req.SortBy, req.SortOrder, page, limit)
 	if err != nil {
 		return &pb.ListPostsResponse{
@@ -756,9 +745,9 @@ func (s *PostServiceServer) modelToProto(post *models.Post) *pb.Post {
 	// Set the author from the user response
 	if user != nil {
 		pbPost.Author = &pb.Author{
-			Id:       user.Id,
-			Username: user.Username,
-			Email:    user.Email,
+			Id:       user.GetId(),
+			Email:    user.GetEmail(),
+			Username: user.GetUsername(),
 		}
 	}
 

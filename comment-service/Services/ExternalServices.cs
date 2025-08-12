@@ -1,4 +1,7 @@
-using CommentService.ExternalGrpc;
+using CommentService.Events;
+using CommentService.Posts;
+using CommentService.Users;
+
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Caching.Distributed;
@@ -11,6 +14,7 @@ namespace CommentService.Services
         Task<bool> ValidateUserAsync(string userId);
         Task<bool> ValidatePostAsync(uint postId);
         Task<User?> GetUserAsync(string userId);
+        Task<User?> GetLocalUserAsync(string userId);
         Task<Post?> GetPostAsync(uint postId);
         Task<Event?> PublishEvent(
             string aggregate_id,
@@ -49,9 +53,9 @@ namespace CommentService.Services
             var postChannel = GrpcChannel.ForAddress(postServiceUrl!);
             var eventChannel = GrpcChannel.ForAddress(eventServiceUrl!);
 
-            _userServiceClient = new UserService.UserServiceClient(userChannel);
-            _postServiceClient = new PostService.PostServiceClient(postChannel);
-            _eventServiceClient = new EventService.EventServiceClient(eventChannel);
+            _userServiceClient = new Users.UserService.UserServiceClient(userChannel);
+            _postServiceClient = new Posts.PostService.PostServiceClient(postChannel);
+            _eventServiceClient = new Events.EventService.EventServiceClient(eventChannel);
         }
 
         public async Task<bool> ValidateUserAsync(string userId)
@@ -158,6 +162,50 @@ namespace CommentService.Services
             {
                 var request = new GetUserRequest { UserId = userId };
                 var response = await _userServiceClient.GetUserAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
+
+                if (response.Success && response.User != null)
+                {
+                    await SetCacheAsync(cacheKey, response.User);
+                    return response.User;
+                }
+
+                _logger.LogWarning("Failed to get user {UserId}: {Message}", userId, response.Message);
+                return null;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "gRPC error getting user {UserId}: {StatusCode}", userId, ex.StatusCode);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user {UserId}", userId);
+                return null;
+            }
+        }
+
+        public async Task<User?> GetLocalUserAsync(string userId)
+        {
+            var cacheKey = $"local_user_data:{userId}";
+
+            try
+            {
+                var cachedUser = await _cache.GetStringAsync(cacheKey);
+                if (!string.IsNullOrEmpty(cachedUser))
+                {
+                    _logger.LogDebug("Cache hit for user data {UserId}", userId);
+                    return JsonSerializer.Deserialize<User>(cachedUser);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get user data from cache for user {UserId}", userId);
+            }
+
+            try
+            {
+                var request = new GetUserRequest { UserId = userId };
+                var response = await _userServiceClient.GetLocalUserAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
 
                 if (response.Success && response.User != null)
                 {

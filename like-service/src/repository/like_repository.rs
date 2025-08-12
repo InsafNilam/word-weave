@@ -33,15 +33,16 @@ impl LikesRepository {
         }
 
         let like = Like::new(user_id.to_string(), post_id.clone());
+        debug!("Creating like record: {:?}", like);
 
         let query = r#"
             CREATE likes SET 
                 id = $id,
                 user_id = $user_id,
                 post_id = $post_id,
-                liked_at = $liked_at,
-                created_at = $created_at,
-                updated_at = $updated_at;
+                liked_at = time::now(),
+                created_at = time::now(),
+                updated_at = time::now();
         "#;
 
         let mut result = self
@@ -60,6 +61,7 @@ impl LikesRepository {
                 if e.to_string().contains("duplicate") {
                     LikesError::AlreadyExists("User has already liked this post".to_string())
                 } else {
+                    println!("SurrealDB error creating like: {:?}", e);
                     LikesError::Database(e)
                 }
             })?;

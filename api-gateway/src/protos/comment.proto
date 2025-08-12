@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
 package comment;
 
 // Comment Service
@@ -14,14 +15,21 @@ service CommentService {
   rpc DeleteComments(DeleteCommentsRequest) returns (DeleteCommentResponse);
 }
 
+message Author {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+}
+
 // Messages
 message Comment {
   uint32 id = 1;
   string user_id = 2;
   uint32 post_id = 3;
   string description = 4;
-  string created_at = 5;
-  string updated_at = 6;
+  Author author = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
 }
 
 message CreateCommentRequest {

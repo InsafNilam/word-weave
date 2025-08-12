@@ -16,7 +16,8 @@ interface Post {
   updatedAt: string;
   category: string;
   author: {
-    username: string;
+    id: string;
+    username?: string;
   };
   [key: string]: unknown;
 }

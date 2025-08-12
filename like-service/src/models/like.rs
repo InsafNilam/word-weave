@@ -1,10 +1,11 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use surrealdb::sql::Thing;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Like {
-    pub id: Option<String>,
+    pub id: Option<Thing>,
     pub user_id: String,
     pub post_id: u32,
     pub liked_at: DateTime<Utc>,
@@ -16,7 +17,7 @@ impl Like {
     pub fn new(user_id: String, post_id: u32) -> Self {
         let now = Utc::now();
         Self {
-            id: Some(Uuid::new_v4().to_string()),
+            id: None,
             user_id,
             post_id,
             liked_at: now,

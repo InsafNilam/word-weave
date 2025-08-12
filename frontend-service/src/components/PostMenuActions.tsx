@@ -9,12 +9,13 @@ interface Post {
   slug?: string;
   isFeatured?: boolean;
   author: {
-    username: string;
+    id: string;
+    username?: string;
   };
 }
 
 interface SavedPostsResponse {
-  data: string[];
+  likes: { post_id: number }[];
 }
 
 interface PostMenuActionsProps {
@@ -34,17 +35,20 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
     queryKey: ["savedPosts"],
     queryFn: async () => {
       const token = await getToken();
-      return axios.get(`${import.meta.env.VITE_API_URL}/api/likes/users/${user?.id}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/likes/users/${user?.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      return response.data;
     },
   });
 
   const isAdmin = user?.publicMetadata?.role === "admin" || false;
 
-  const isSaved: boolean = (savedPosts as SavedPostsResponse)?.data?.some((p: string) => p === String(post.id)) || false;
+  const isSaved: boolean = Array.isArray(savedPosts?.likes as SavedPostsResponse)
+    ? savedPosts?.likes.some((p: { post_id: number }) => p.post_id === post.id)
+    : false;
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -69,15 +73,39 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const token = await getToken();
-      return axios.patch(
+      return axios.post(
         `${import.meta.env.VITE_API_URL}/api/likes`,
         {
-          postId: post.id,
-          userId: user?.id,
+          post_id: post.id,
+          user_id: user?.id,
         },
         {
           headers: {
             Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["savedPosts"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "An error occurred");
+    },
+  });
+
+  const unSaveMutation = useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return axios.delete(
+        `${import.meta.env.VITE_API_URL}/api/likes`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          data: {
+            post_id: post.id,
+            user_id: user?.id,
           },
         }
       );
@@ -126,7 +154,11 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
     if (!user) {
       return navigate("/login");
     }
-    saveMutation.mutate();
+    if (isSaved) {
+      return unSaveMutation.mutate(); // ✅ Unsave when already saved
+    }
+
+    saveMutation.mutate(); // ✅ Save when not saved
   };
 
   return (
@@ -163,7 +195,7 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
             />
           </svg>
           <span>Save this Post</span>
-          {saveMutation.isPending && (
+          {(saveMutation.isPending || unSaveMutation.isPending) && (
             <span className="text-xs">(in progress)</span>
           )}
         </div>
@@ -200,7 +232,7 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
           )}
         </div>
       )}
-      {user && (post.author.username === user.username || isAdmin) && (
+      {user && (post.author?.username === user.username || isAdmin) && (
         <div
           className="flex items-center gap-2 py-2 text-sm cursor-pointer"
           onClick={handleDelete}

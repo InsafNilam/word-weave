@@ -133,6 +133,8 @@ export const userService = {
         throw new Error("User ID is required");
       }
 
+      console.log("Fetching user from Clerk:", user_id);
+
       const clerkUser = await clerkClient.users.getUser(user_id);
       if (!clerkUser) {
         throw new Error(`User not found in Clerk: ${user_id}`);

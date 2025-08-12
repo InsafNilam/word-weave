@@ -85,8 +85,8 @@ impl PostClient {
     /// Check if post exists (convenience method)
     pub async fn post_exists(&mut self, post_id: u32) -> Result<bool> {
         match self.get_post(post_id).await {
-            Ok(response) => Ok(response.success && response.post.is_some()),
-            Err(_) => Ok(false), // Assume post doesn't exist if there's an error
+            Ok(response) => Ok(response.success),
+            Err(_) => Ok(false),
         }
     }
 

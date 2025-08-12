@@ -8,7 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "timeago.js";
 
 interface User {
-  username: string;
+  id: string;
+  username?: string;
   img?: string;
 }
 
@@ -23,8 +24,8 @@ interface Post {
 }
 
 const fetchPost = async (slug: string | undefined): Promise<Post> => {
-  const res = await axios.get<Post>(`${import.meta.env.VITE_API_URL}/api/posts/slug/${slug}`);
-  return res.data;
+  const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/posts/slug/${slug}`);
+  return res.data.post;
 };
 
 const PostDetailsPage = () => {
@@ -49,7 +50,7 @@ const PostDetailsPage = () => {
           </h1>
           <div className="flex items-center gap-2 text-gray-400 text-sm">
             <span>Written by</span>
-            <Link to="#" className="text-blue-800">{data.author.username}</Link>
+            <Link to="#" className="text-blue-800">{data.author?.username}</Link>
             <span>on</span>
             <Link to="#" className="text-blue-800">{data.category}</Link>
             <span>{format(data.createdAt)}</span>
@@ -164,7 +165,7 @@ const PostDetailsPage = () => {
                   h={48}
                 />
               )}
-              <Link to="#" className="text-blue-800">{data.author.username}</Link>
+              <Link to="#" className="text-blue-800">{data.author?.username}</Link>
             </div>
             <p className="text-sm text-gray-500">
               Lorem ipsum dolor sit amet consectetur

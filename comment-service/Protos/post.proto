@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option csharp_namespace = "CommentService.Posts";
+
 package post;
 
 import "google/protobuf/timestamp.proto";

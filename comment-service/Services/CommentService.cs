@@ -80,7 +80,7 @@ namespace CommentService.GrpcServices
                 // Create comment
                 var comment = new CommentService.Models.Comment
                 {
-                    UserId = user.MongoId,
+                    UserId = user.Id,
                     PostId = request.PostId,
                     Description = request.Description.Trim()
                 };
@@ -91,7 +91,7 @@ namespace CommentService.GrpcServices
                 {
                     Success = true,
                     Message = "Comment created successfully",
-                    Comment = MapToGrpcComment(createdComment)
+                    Comment = await MapToGrpcComment(createdComment, _externalServices)
                 };
             }
             catch (Exception ex)
@@ -130,7 +130,7 @@ namespace CommentService.GrpcServices
                 {
                     Success = true,
                     Message = "Comment retrieved successfully",
-                    Comment = MapToGrpcComment(comment)
+                    Comment = await MapToGrpcComment(comment, _externalServices)
                 };
             }
             catch (Exception ex)
@@ -169,7 +169,8 @@ namespace CommentService.GrpcServices
                     PageSize = pageSize
                 };
 
-                response.Comments.AddRange(comments.Select(MapToGrpcComment));
+                var grpcComments = await Task.WhenAll(comments.Select(comment => MapToGrpcComment(comment, _externalServices)));
+                response.Comments.AddRange(grpcComments);
                 return response;
             }
             catch (Exception ex)
@@ -207,7 +208,7 @@ namespace CommentService.GrpcServices
                 var page = Math.Max(1, request.Page);
                 var pageSize = Math.Min(Math.Max(1, request.PageSize), 100);
 
-                var (comments, totalCount) = await _commentRepository.GetByUserIdAsync(user.MongoId, page, pageSize);
+                var (comments, totalCount) = await _commentRepository.GetByUserIdAsync(user.Id, page, pageSize);
 
                 var response = new GetCommentsResponse
                 {
@@ -218,7 +219,8 @@ namespace CommentService.GrpcServices
                     PageSize = pageSize
                 };
 
-                response.Comments.AddRange(comments.Select(MapToGrpcComment));
+                var grpcComments = await Task.WhenAll(comments.Select(comment => MapToGrpcComment(comment, _externalServices)));
+                response.Comments.AddRange(grpcComments);
                 return response;
             }
             catch (Exception ex)
@@ -283,7 +285,7 @@ namespace CommentService.GrpcServices
                 }
 
                 // Verify user owns the comment
-                if (existingComment.UserId != user.MongoId)
+                if (existingComment.UserId != user.Id)
                 {
                     return new CommentResponse
                     {
@@ -309,7 +311,7 @@ namespace CommentService.GrpcServices
                 {
                     Success = true,
                     Message = "Comment updated successfully",
-                    Comment = MapToGrpcComment(updatedComment)
+                    Comment = await MapToGrpcComment(updatedComment, _externalServices)
                 };
             }
             catch (Exception ex)
@@ -365,7 +367,7 @@ namespace CommentService.GrpcServices
                 }
 
                 // Verify user owns the comment
-                if (existingComment.UserId != user.MongoId)
+                if (existingComment.UserId != user.Id)
                 {
                     return new DeleteCommentResponse
                     {
@@ -460,7 +462,7 @@ namespace CommentService.GrpcServices
                                 Message = $"User {userId} not found"
                             };
                         }
-                        mongoUserIds.Add(user.MongoId);
+                        mongoUserIds.Add(user.Id);
                     }
                 }
 
@@ -492,16 +494,26 @@ namespace CommentService.GrpcServices
             }
         }
 
-        private static Grpc.Comment MapToGrpcComment(Models.Comment comment)
+        private static async Task<Grpc.Comment> MapToGrpcComment(Models.Comment comment, IExternalServices _externalServices)
         {
+            var user = await _externalServices.GetLocalUserAsync(comment.UserId);
+
+            var author = new Grpc.Author
+            {
+                Id = user?.Id ?? string.Empty,
+                Username = user?.Username ?? string.Empty,
+                Email = user?.Email ?? string.Empty
+            };
+
             return new Grpc.Comment
             {
                 Id = comment.Id,
                 UserId = comment.UserId,
                 PostId = comment.PostId,
                 Description = comment.Description,
-                CreatedAt = comment.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                UpdatedAt = comment.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                Author = author,
+                CreatedAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(comment.CreatedAt.ToUniversalTime()),
+                UpdatedAt = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(comment.UpdatedAt.ToUniversalTime())
             };
         }
     }

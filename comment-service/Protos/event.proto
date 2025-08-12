@@ -1,68 +1,9 @@
 syntax = "proto3";
 
-option csharp_namespace = "CommentService.ExternalGrpc";
+option csharp_namespace = "CommentService.Events";
 
-package external;
-import "google/protobuf/timestamp.proto";
+package event;
 
-// User Service Client
-service UserService { rpc GetUser(GetUserRequest) returns (GetUserResponse); }
-
-message GetUserRequest { string user_id = 1; }
-
-message GetUserResponse {
-  bool success = 1;
-  string message = 2;
-  User user = 3;
-}
-
-message User {
-  string id = 1;
-  string mongo_id = 2 [ json_name = "_id" ];
-  string email = 3;
-  string username = 4;
-  string first_name = 5;
-  string last_name = 6;
-  string role = 7;
-  string bio = 8;
-  string created_at = 9;
-  string updated_at = 10;
-}
-
-// Post Service Client
-service PostService { rpc GetPost(GetPostRequest) returns (GetPostResponse); }
-
-message GetPostRequest { uint32 post_id = 1; }
-
-message GetPostResponse {
-  bool success = 1;
-  string message = 2;
-  Post post = 3;
-}
-
-message Author {
-  string id = 1;
-  string username = 2;
-  string email = 3;
-}
-
-message Post {
-  int32 id = 1;
-  string user_id = 2;
-  string img = 3;
-  string title = 4;
-  string slug = 5;
-  string desc = 6;
-  string category = 7;
-  string content = 8;
-  bool is_featured = 9;
-  uint32 visit = 10;
-  Author author = 11;
-  google.protobuf.Timestamp created_at = 12;
-  google.protobuf.Timestamp updated_at = 13;
-}
-
-// Event Service Client
 service EventService {
   rpc PublishEvent(PublishEventRequest) returns (PublishEventResponse);
   rpc GetEvents(GetEventsRequest) returns (GetEventsResponse);

@@ -23,7 +23,6 @@ pub struct Database {
 impl Database {
     pub async fn new(database_url: &str) -> Result<Self> {
         info!("Connecting to database: {}", database_url);
-        println!("Connecting to database: {}", database_url);
 
         let client = if database_url.starts_with("ws://") || database_url.starts_with("wss://") {
             // Remote SurrealDB connection (Docker)
@@ -124,10 +123,11 @@ impl Database {
             DEFINE TABLE likes SCHEMAFULL;
             
             -- Define fields with proper types and constraints
+            DEFINE FIELD id ON TABLE likes TYPE string;
             DEFINE FIELD user_id ON TABLE likes TYPE string 
                 ASSERT $value != NONE AND string::len($value) > 0;
-            DEFINE FIELD post_id ON TABLE likes TYPE string 
-                ASSERT $value != NONE AND string::len($value) > 0;
+            DEFINE FIELD post_id ON TABLE likes TYPE int 
+                ASSERT $value != NONE AND $value > 0;
             DEFINE FIELD liked_at ON TABLE likes TYPE datetime DEFAULT time::now();
             DEFINE FIELD created_at ON TABLE likes TYPE datetime DEFAULT time::now();
             DEFINE FIELD updated_at ON TABLE likes TYPE datetime DEFAULT time::now() 

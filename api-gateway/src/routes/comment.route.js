@@ -9,14 +9,16 @@ router.post("/", authorizeByRole([]), (req, res) => {
   const user_id = auth?.userId;
 
   const { post_id, description } = req.body;
-  const comment = { post_id, description, user_id };
 
-  commentClient.CreateComment(comment, (error, response) => {
-    if (error) {
-      return res.status(500).json({ error: error.message });
+  commentClient.CreateComment(
+    { post_id, description, user_id },
+    (error, response) => {
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+      res.status(201).json(response);
     }
-    res.status(201).json(response);
-  });
+  );
 });
 
 router.get("/:id", (req, res) => {
