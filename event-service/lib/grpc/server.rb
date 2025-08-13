@@ -22,7 +22,7 @@ module EventService
         )
 
         unless validation_result.success?
-          return PublishEventResponse.new(
+          return ::Event::PublishEventResponse.new(
             success: false,
             message: "Validation failed: #{validation_result.errors.to_h}"
           )
@@ -43,19 +43,19 @@ module EventService
           causation_id: request.causation_id
         )
 
-        PublishEventResponse.new(
+        ::Event::PublishEventResponse.new(
           event_id: event.id,
           success: true,
           message: "Event published successfully"
         )
       rescue JSON::ParserError => e
-        PublishEventResponse.new(
+        ::Event::PublishEventResponse.new(
           success: false,
           message: "Invalid JSON: #{e.message}"
         )
       rescue => e
         @logger.error("Error publishing event: #{e.message}")
-        PublishEventResponse.new(
+        ::Event::PublishEventResponse.new(
           success: false,
           message: "Internal error: #{e.message}"
         )
@@ -81,14 +81,14 @@ module EventService
 
         grpc_events = events.map { |event| event_to_grpc(event) }
 
-        GetEventsResponse.new(
+        ::Event::GetEventsResponse.new(
           events: grpc_events,
           success: true,
           message: "Events retrieved successfully"
         )
       rescue => e
         @logger.error("Error getting events: #{e.message}")
-        GetEventsResponse.new(
+        ::Event::GetEventsResponse.new(
           events: [],
           success: false,
           message: "Internal error: #{e.message}"
@@ -106,14 +106,14 @@ module EventService
 
         grpc_events = events.map { |event| event_to_grpc(event) }
 
-        GetEventsResponse.new(
+        ::Event::GetEventsResponse.new(
           events: grpc_events,
           success: true,
           message: "Events retrieved successfully"
         )
       rescue => e
         @logger.error("Error getting events by aggregate: #{e.message}")
-        GetEventsResponse.new(
+        ::Event::GetEventsResponse.new(
           events: [],
           success: false,
           message: "Internal error: #{e.message}"
@@ -130,14 +130,14 @@ module EventService
           status: 'active'
         ).id
 
-        SubscribeToEventsResponse.new(
+        ::Event::SubscribeToEventsResponse.new(
           subscription_id: subscription_id,
           success: true,
           message: "Subscription created successfully"
         )
       rescue => e
         @logger.error("Error creating subscription: #{e.message}")
-        SubscribeToEventsResponse.new(
+        ::Event::SubscribeToEventsResponse.new(
           success: false,
           message: "Internal error: #{e.message}"
         )
@@ -147,7 +147,7 @@ module EventService
     private
 
     def event_to_grpc(event)
-      Event.new(
+      ::Event::Event.new(
         id: event.id,
         aggregate_id: event.aggregate_id,
         aggregate_type: event.aggregate_type,
