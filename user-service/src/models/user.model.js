@@ -32,7 +32,7 @@ const userSchema = new Schema(
   },
   {
     timestamps: true,
-    indexes: [{ clerkUserId: 1 }, { email: 1 }, { username: 1 }],
+    indexes: [{ clerk_user_id: 1 }, { email: 1 }, { username: 1 }],
   }
 );
 

@@ -23,7 +23,7 @@ export const userService = {
     try {
       await this.eventClient.publishEvent({
         aggregateId: "user-service",
-        aggregateType: "UserService",
+        aggregateType: "user",
         eventType,
         eventData: {
           error: error.message,
@@ -84,13 +84,13 @@ export const userService = {
         throw new Error("Invalid response from Clerk API");
       }
 
-      // 2️⃣ Get local DB users for enrichment
+      // Get local DB users for enrichment
       const clerkIds = clerkResult.data.map((u) => u.id);
       const localUsers = await User.find({
-        clerkUserId: { $in: clerkIds },
+        clerk_user_id: { $in: clerkIds },
       }).lean();
 
-      const localUserMap = new Map(localUsers.map((u) => [u.clerkUserId, u]));
+      const localUserMap = new Map(localUsers.map((u) => [u.clerk_user_id, u]));
 
       // Merge Clerk + local DB data
       const users = clerkResult.data.map((clerkUser) => {
@@ -141,7 +141,7 @@ export const userService = {
       }
 
       // Fetch local DB user
-      const localUser = await User.findOne({ clerkUserId: user_id }).lean();
+      const localUser = await User.findOne({ clerk_user_id: user_id }).lean();
 
       // Merge Clerk + local DB data
       const user = {
@@ -180,9 +180,11 @@ export const userService = {
       // Fetch local DB user
       const localUser = await User.findById(user_id).lean();
 
-      const clerkUser = await clerkClient.users.getUser(localUser.clerkUserId);
+      const clerkUser = await clerkClient.users.getUser(
+        localUser.clerk_user_id
+      );
       if (!clerkUser) {
-        throw new Error(`User not found in Clerk: ${localUser.clerkUserId}`);
+        throw new Error(`User not found in Clerk: ${localUser.clerk_user_id}`);
       }
 
       // Merge Clerk + local DB data
@@ -247,7 +249,9 @@ export const userService = {
       });
 
       // Fetch local DB user
-      const localUser = await User.findOne({ clerkUserId: newUser.id }).lean();
+      const localUser = await User.findOne({
+        clerk_user_id: newUser.id,
+      }).lean();
       // Merge Clerk + local DB data
       const user = {
         ...clerkUser,
@@ -258,7 +262,7 @@ export const userService = {
       // Publish Event
       await this.eventClient.publishEvent({
         aggregateId: user._id || user.id,
-        aggregateType: "User",
+        aggregateType: "user",
         eventType: "user.created",
         eventData: {
           userId: user._id,
@@ -320,7 +324,7 @@ export const userService = {
       let updatedLocalUser = null;
       if (bio || username) {
         updatedLocalUser = await User.findOneAndUpdate(
-          { clerkUserId: user_id },
+          { clerk_user_id: user_id },
           {
             ...(username && { username }),
             ...(bio && { bio }),
@@ -338,7 +342,7 @@ export const userService = {
       // Publish Event
       await eventClient.publishEvent({
         aggregateId: updatedUser._id,
-        aggregateType: "User",
+        aggregateType: "user",
         eventType: "user.updated",
         eventData: {
           userId: updatedUser._id,
@@ -384,7 +388,7 @@ export const userService = {
 
       // Fetch local DB user
       const localDeletedUser = await User.findOne({
-        clerkUserId: user_id,
+        clerk_user_id: user_id,
       }).lean();
       const clerkDeletedUser = await clerkClient.users.deleteUser(user_id);
 
@@ -397,7 +401,7 @@ export const userService = {
       // Publish Event
       await eventClient.publishEvent({
         aggregateId: deletedUser._id,
-        aggregateType: "User",
+        aggregateType: "user",
         eventType: "user.deleted",
         eventData: {
           userId: localDeletedUser._id,
@@ -486,7 +490,7 @@ export const userService = {
         publicMetadata: { role },
       });
       // Fetch local DB user
-      const localUser = await User.findOne({ clerkUserId: user_id }).lean();
+      const localUser = await User.findOne({ clerk_user_id: user_id }).lean();
 
       // Merge local user data with updated user data
       const user = {
@@ -498,7 +502,7 @@ export const userService = {
       // Publish Event
       await eventClient.publishEvent({
         aggregateId: user._id,
-        aggregateType: "User",
+        aggregateType: "user",
         eventType: "user.updated",
         eventData: {
           userId: localUser._id,

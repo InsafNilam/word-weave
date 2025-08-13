@@ -18,7 +18,7 @@ export const transformUser = (user) => {
 
   return {
     id: user._id || "",
-    clerkUserId: user.id || "",
+    clerk_user_id: user.id || "",
     username: user.username || "",
     email: user.emailAddresses?.[0]?.emailAddress || "",
     image_url: user.hasImage ? user.imageUrl : "",
