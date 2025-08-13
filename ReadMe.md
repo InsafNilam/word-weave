@@ -97,7 +97,7 @@ docker-compose up -d --no-deps --build --force-recreate like-service
    ngrok http http://localhost:8081/
    ```
 
-3. Copy the HTTPS ngrok URL to Clerk Dashboard under **user events** webhooks
+3. Copy the HTTPS ngrok URL add the suffix /webhook/clerk , and then paste the complete URL into the **user events** webhooks
 4. Add `CLERK_WEBHOOK_SIGNING_SECRET` from Clerk to your `.env`
 5. Restart **User Service**
 6. Incoming webhooks will update MongoDB automatically
