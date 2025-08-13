@@ -33,22 +33,7 @@ export const clerkWebHook = async (req, res) => {
     console.log(`📥 Received webhook: ${evt.type} for user ${evt.data.id}`);
 
     // Handle different webhook events
-    switch (evt.type) {
-      case "user.created":
-        await UserHandler.createUser(evt.data);
-        break;
-
-      case "user.updated":
-        await UserHandler.updateUser(evt.data.id, evt.data);
-        break;
-
-      case "user.deleted":
-        await UserHandler.deleteUser(evt.data.id);
-        break;
-
-      default:
-        console.log(`ℹ️ Unhandled webhook event type: ${evt.type}`);
-    }
+    const result = await UserHandler.handleWebhookEvent(evt.type, evt.data);
 
     return res.status(200).json({
       success: true,
