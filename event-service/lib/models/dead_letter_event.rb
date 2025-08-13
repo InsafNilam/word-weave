@@ -1,9 +1,10 @@
 require 'sequel'
+require 'securerandom'
 
 module EventService
   class DeadLetterEvent < Sequel::Model
     def before_create
-      self.id ||= UUID.generate
+      self.id ||= SecureRandom.uuid
       super
     end
 

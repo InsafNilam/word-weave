@@ -1,10 +1,11 @@
 require 'sequel'
 require 'json'
+require 'securerandom'
 
 module EventService
   class EventSubscription < Sequel::Model
     def before_create
-      self.id ||= UUID.generate
+      self.id ||= SecureRandom.uuid
       super
     end
 
