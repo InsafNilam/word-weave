@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 
 const userSchema = new Schema(
   {
-    clerkUserId: {
+    clerk_user_id: {
       type: String,
       required: true,
       unique: true,

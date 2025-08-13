@@ -15,6 +15,8 @@ import webhookRoutes from "../webhook/index.js";
 export const createWebhookServer = () => {
   const app = express();
 
+  app.set("trust proxy", true);
+
   // Security middleware
   app.use(
     helmet({
@@ -66,7 +68,7 @@ export const createWebhookServer = () => {
   });
 
   // Webhook routes
-  app.use("/webhook", webhookRoutes);
+  app.use("/webhook", express.raw({ type: "application/json" }), webhookRoutes);
 
   // Global error handler
   app.use((err, req, res, next) => {

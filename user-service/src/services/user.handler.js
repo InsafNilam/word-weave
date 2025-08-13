@@ -3,8 +3,12 @@ import User from "../models/user.model.js";
 export class UserHandler {
   static async createUser(userData) {
     try {
+      if (!userData.id) {
+        throw new Error("Clerk user ID is required");
+      }
+
       const newUser = new User({
-        clerkUserId: userData.id,
+        clerk_user_id: userData.id,
         username:
           userData.username || userData.email_addresses[0]?.email_address,
         email: userData.email_addresses[0]?.email_address,
@@ -22,7 +26,9 @@ export class UserHandler {
 
   static async deleteUser(clerkUserId) {
     try {
-      const deletedUser = await User.findOneAndDelete({ clerkUserId });
+      const deletedUser = await User.findOneAndDelete({
+        clerk_user_id: clerkUserId,
+      });
 
       if (deletedUser) {
         console.log(`✅ User deleted: ${deletedUser.username}`);
@@ -40,7 +46,7 @@ export class UserHandler {
   static async updateUser(clerkUserId, userData) {
     try {
       const updatedUser = await User.findOneAndUpdate(
-        { clerkUserId },
+        { clerk_user_id: clerkUserId },
         {
           username:
             userData.username || userData.email_addresses[0]?.email_address,
