@@ -144,6 +144,12 @@ source venv/bin/activate
 # Activate virtual environment (Windows PowerShell)
 .\venv\Scripts\Activate.ps1
 
+python -m grpc_tools.protoc \
+ -Iproto \
+ --python_out=src/generated \
+ --grpc_python_out=src/generated \
+ proto/media.proto
+
 # Install packages
 pip install -r requirements.txt
 
@@ -182,9 +188,3 @@ MIT License
 ```
 
 ```
-
-python -m grpc_tools.protoc \
- -Iproto \
- --python_out=src/generated \
- --grpc_python_out=src/generated \
- proto/media.proto
