@@ -109,15 +109,6 @@ func (s *PostServiceServer) GetPost(ctx context.Context, req *pb.GetPostRequest)
 		}, nil
 	}
 
-	// Increment visit count
-	err = s.repo.IncrementVisit(uint(req.Id))
-	if err != nil {
-		return &pb.PostResponse{
-			Success: false,
-			Message: fmt.Sprintf("Failed to increment visit: %v", err),
-		}, nil
-	}
-
 	return &pb.PostResponse{
 		Post:    s.modelToProto(post),
 		Success: true,
