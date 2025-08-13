@@ -7,7 +7,7 @@ import { toast } from "sonner";
 interface Post {
   id: number;
   slug?: string;
-  isFeatured?: boolean;
+  is_featured?: boolean;
   author: {
     id: string;
     username?: string;
@@ -124,8 +124,8 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
       return axios.patch(
         `${import.meta.env.VITE_API_URL}/api/posts/${post.id}`,
         {
-          userId: user?.id,
-          isFeatured: !post.isFeatured,
+          user_id: user?.id,
+          is_featured: !post.is_featured,
         },
         {
           headers: {
@@ -217,10 +217,10 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
               strokeWidth="2"
               fill={
                 featureMutation.isPending
-                  ? post.isFeatured
+                  ? post.is_featured
                     ? "none"
                     : "black"
-                  : post.isFeatured
+                  : post.is_featured
                     ? "black"
                     : "none"
               }

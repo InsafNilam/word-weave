@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use(clerkMiddleware());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/users", userRoutes);
 app.use("/api/posts", postRoutes);

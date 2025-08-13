@@ -15,7 +15,7 @@ router.get("/health", (req, res) => {
 
 router.post("/", authorizeByRole([]), (req, res) => {
   const auth = req.auth?.() || {};
-  const user_id = req.body.user_id || auth.userId;
+  const user_id = req.body?.user_id || auth.userId;
 
   const { post_id } = req.body;
 
@@ -29,7 +29,7 @@ router.post("/", authorizeByRole([]), (req, res) => {
 
 router.delete("/", authorizeByRole([]), (req, res) => {
   const auth = req.auth?.() || {};
-  const user_id = req.body.user_id || auth.userId;
+  const user_id = req.body?.user_id || auth.userId;
 
   const { post_id } = req.body;
 
