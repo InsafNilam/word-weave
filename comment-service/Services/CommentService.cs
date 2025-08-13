@@ -3,6 +3,7 @@ using CommentService.Models;
 using CommentService.Repositories;
 using CommentService.Services;
 using Grpc.Core;
+using Serilog;
 
 namespace CommentService.GrpcServices
 {

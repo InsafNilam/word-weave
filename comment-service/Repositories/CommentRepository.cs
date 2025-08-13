@@ -1,6 +1,9 @@
 using CommentService.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Serilog;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace CommentService.Repositories
@@ -21,17 +24,41 @@ namespace CommentService.Repositories
     {
         private readonly CommentDbContext _context;
         private readonly IDistributedCache _cache;
+        private readonly IConnectionMultiplexer _redis;
+        private readonly IDatabase _database;
         private readonly ILogger<CommentRepository> _logger;
         private readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(15);
+        private readonly string _keyPrefix;
 
         public CommentRepository(
             CommentDbContext context,
             IDistributedCache cache,
+            IConnectionMultiplexer redis,
             ILogger<CommentRepository> logger)
         {
             _context = context;
             _cache = cache;
+            _redis = redis;
+            _database = redis.GetDatabase();
             _logger = logger;
+            _keyPrefix = GetRedisKeyPrefix();
+        }
+
+        private string GetRedisKeyPrefix()
+        {
+            // Extract the key prefix from RedisCache if available
+            if (_cache is RedisCache redisCache)
+            {
+                var options = redisCache.GetType()
+                    .GetField("_options", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?
+                    .GetValue(redisCache) as RedisCacheOptions;
+
+                var prefix = options?.InstanceName ?? "";
+                _logger.LogInformation("Detected Redis key prefix: '{Prefix}'", prefix);
+                return prefix;
+            }
+            _logger.LogWarning("Could not detect Redis key prefix, using empty string");
+            return "";
         }
 
         public async Task<Comment?> GetByIdAsync(uint id)
@@ -66,15 +93,25 @@ namespace CommentService.Repositories
         public async Task<(IEnumerable<Comment> Comments, int TotalCount)> GetByPostIdAsync(uint postId, int page, int pageSize)
         {
             var cacheKey = $"comments:post:{postId}:page:{page}:size:{pageSize}";
+            _logger.LogDebug("Looking for cache key: {CacheKey}", cacheKey);
 
             try
             {
                 var cachedData = await _cache.GetStringAsync(cacheKey);
                 if (!string.IsNullOrEmpty(cachedData))
                 {
-                    _logger.LogDebug("Cache hit for post comments {PostId}, page {Page}", postId, page);
+                    _logger.LogInformation("Cache hit for post comments {PostId}, page {Page} - KEY: {CacheKey}", postId, page, cacheKey);
                     var cached = JsonSerializer.Deserialize<CommentPageResult>(cachedData);
-                    return (cached!.Comments, cached.TotalCount);
+
+                    // DEBUG: Show what's in cache vs database
+                    var dbCount = await _context.Comments.CountAsync(c => c.PostId == postId);
+                    _logger.LogWarning("CACHE vs DB MISMATCH - Cache has {CacheCount} comments, DB has {DbCount} comments", cached!.TotalCount, dbCount);
+
+                    return (cached.Comments, cached.TotalCount);
+                }
+                else
+                {
+                    _logger.LogDebug("Cache miss for cache key: {CacheKey}", cacheKey);
                 }
             }
             catch (Exception ex)
@@ -92,6 +129,8 @@ namespace CommentService.Repositories
                 .ToListAsync();
 
             var result = new CommentPageResult { Comments = comments, TotalCount = totalCount };
+
+            _logger.LogInformation("Setting cache for key: {CacheKey} with {Count} comments", cacheKey, totalCount);
             await SetCacheAsync(cacheKey, result);
 
             return (comments, totalCount);
@@ -138,6 +177,12 @@ namespace CommentService.Repositories
 
             _context.Comments.Add(comment);
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Comment saved to database - ID: {CommentId}, PostId: {PostId}", comment.Id, comment.PostId);
+
+            // Verify the comment exists in database immediately
+            var verifyCount = await _context.Comments.CountAsync(c => c.PostId == comment.PostId);
+            _logger.LogInformation("Database verification - Total comments for post {PostId}: {Count}", comment.PostId, verifyCount);
 
             // Invalidate related caches
             await InvalidatePostCommentsCache(comment.PostId);
@@ -189,13 +234,20 @@ namespace CommentService.Repositories
         {
             var cacheKey = $"comment_count:post:{postId}";
 
+            _logger.LogDebug("Getting comment count for post {PostId}, cache key: {CacheKey}", postId, cacheKey);
+
             try
             {
                 var cachedCount = await _cache.GetStringAsync(cacheKey);
                 if (!string.IsNullOrEmpty(cachedCount))
                 {
-                    _logger.LogDebug("Cache hit for comment count for post {PostId}", postId);
-                    return JsonSerializer.Deserialize<int>(cachedCount);
+                    var cached = JsonSerializer.Deserialize<int>(cachedCount);
+                    _logger.LogDebug("Cache hit for comment count for post {PostId}: {Count}", postId, cached);
+                    return cached;
+                }
+                else
+                {
+                    _logger.LogDebug("Cache miss for comment count for post {PostId}", postId);
                 }
             }
             catch (Exception ex)
@@ -203,8 +255,12 @@ namespace CommentService.Repositories
                 _logger.LogWarning(ex, "Failed to get comment count from cache for post {PostId}", postId);
             }
 
+            _logger.LogDebug("Querying database for comment count for post {PostId}", postId);
             var count = await _context.Comments.CountAsync(c => c.PostId == postId);
+            _logger.LogInformation("Database query result - Comment count for post {PostId}: {Count}", postId, count);
+
             await SetCacheAsync(cacheKey, count);
+            _logger.LogDebug("Cached comment count for post {PostId}: {Count}", postId, count);
 
             return count;
         }
@@ -232,7 +288,8 @@ namespace CommentService.Repositories
                 await InvalidateUserCommentsCache(comment.UserId);
             }
 
-            _logger.LogInformation("Deleted multiple comments for users {UserIds} and posts {PostIds}", string.Join(", ", userIds), string.Join(", ", postIds));
+            _logger.LogInformation("Deleted multiple comments for users {UserIds} and posts {PostIds}",
+                string.Join(", ", userIds), string.Join(", ", postIds));
             return true;
         }
 
@@ -255,38 +312,225 @@ namespace CommentService.Repositories
 
         private async Task InvalidatePostCommentsCache(uint postId)
         {
-            // In a production environment, you might want to use a pattern-based cache invalidation
-            // For now, we'll remove specific keys that we know about
-            var patterns = new[]
+            try
             {
-                $"comments:post:{postId}:*",
-                $"comment_count:post:{postId}"
-            };
+                _logger.LogDebug("Starting cache invalidation for post {PostId} with prefix '{Prefix}'", postId, _keyPrefix);
 
-            foreach (var pattern in patterns)
-            {
+                // Delete ALL possible cache key combinations for this post
+                var pageSizes = new[] { 1, 5, 10, 15, 20, 25, 30, 50, 100 }; // Added size:1 since that's what we saw
+                var pages = Enumerable.Range(1, 20); // First 20 pages
+
+                var deletedCount = 0;
+
+                // Delete comment list caches - include the prefix in the key
+                foreach (var pageSize in pageSizes)
+                {
+                    foreach (var page in pages)
+                    {
+                        // Use IDistributedCache.RemoveAsync which should handle the prefix automatically
+                        var key = $"comments:post:{postId}:page:{page}:size:{pageSize}";
+                        try
+                        {
+                            await _cache.RemoveAsync(key);
+                            deletedCount++;
+                            _logger.LogDebug("Deleted cache key: {Key} (Redis key: {RedisKey})", key, $"{_keyPrefix}{key}");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Failed to delete cache key: {Key}", key);
+                        }
+                    }
+                }
+
+                // Delete comment count cache
+                var countKey = $"comment_count:post:{postId}";
                 try
                 {
-                    await _cache.RemoveAsync(pattern);
+                    await _cache.RemoveAsync(countKey);
+                    deletedCount++;
+                    _logger.LogDebug("Deleted comment count cache key: {Key}", countKey);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to invalidate cache pattern {Pattern}", pattern);
+                    _logger.LogWarning(ex, "Failed to delete comment count cache key: {Key}", countKey);
                 }
+
+                // ALSO try direct Redis deletion with full keys (as backup)
+                await InvalidateCachePattern($"comments:post:{postId}:*");
+
+                _logger.LogInformation("Cache invalidation completed for post {PostId} - attempted to delete {Count} keys", postId, deletedCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to invalidate post comments cache for post {PostId}", postId);
             }
         }
 
         private async Task InvalidateUserCommentsCache(string userId)
         {
-            var pattern = $"comments:user:{userId}:*";
             try
             {
-                await _cache.RemoveAsync(pattern);
+                // Pattern-based cache invalidation using Redis
+                await InvalidateCachePattern($"comments:user:{userId}:*");
+
+                _logger.LogDebug("Invalidated user comments cache for user {UserId}", userId);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to invalidate user cache pattern {Pattern}", pattern);
+                _logger.LogWarning(ex, "Failed to invalidate user comments cache for user {UserId}", userId);
             }
+        }
+
+        private async Task InvalidateCachePattern(string pattern)
+        {
+            try
+            {
+                _logger.LogDebug("Starting pattern invalidation for: {Pattern} with prefix: '{Prefix}'", pattern, _keyPrefix);
+
+                // Get all Redis servers
+                var endpoints = _redis.GetEndPoints();
+                _logger.LogDebug("Found {EndpointCount} Redis endpoints", endpoints.Length);
+
+                var totalKeysDeleted = 0;
+
+                foreach (var endpoint in endpoints)
+                {
+                    var server = _redis.GetServer(endpoint);
+                    if (server == null || !server.IsConnected)
+                    {
+                        _logger.LogWarning("Redis server {Endpoint} is not connected", endpoint);
+                        continue;
+                    }
+
+                    // Build the full pattern WITH the correct prefix
+                    var fullPattern = $"{_keyPrefix}{pattern}";
+                    _logger.LogInformation("Searching for Redis keys with pattern: '{FullPattern}'", fullPattern);
+
+                    // Use SCAN to find matching keys
+                    var keys = server.KeysAsync(pattern: fullPattern, pageSize: 1000);
+
+                    var keysToDelete = new List<RedisKey>();
+                    await foreach (var key in keys)
+                    {
+                        keysToDelete.Add(key);
+                        _logger.LogInformation("Found key to delete: '{Key}'", key);
+
+                        // Delete in batches of 100
+                        if (keysToDelete.Count >= 100)
+                        {
+                            var deleted = await _database.KeyDeleteAsync(keysToDelete.ToArray());
+                            totalKeysDeleted += (int)deleted;
+                            _logger.LogInformation("Deleted batch of {Count} keys", deleted);
+                            keysToDelete.Clear();
+                        }
+                    }
+
+                    // Delete remaining keys
+                    if (keysToDelete.Count > 0)
+                    {
+                        var deleted = await _database.KeyDeleteAsync(keysToDelete.ToArray());
+                        totalKeysDeleted += (int)deleted;
+                        _logger.LogInformation("Deleted final batch of {Count} keys", deleted);
+                    }
+                }
+
+                _logger.LogInformation("Pattern invalidation complete - deleted {KeyCount} keys for pattern {Pattern}", totalKeysDeleted, pattern);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to invalidate cache pattern {Pattern}", pattern);
+            }
+        }
+
+        private async Task DebugRedisKeys()
+        {
+            try
+            {
+                var endpoints = _redis.GetEndPoints();
+                foreach (var endpoint in endpoints)
+                {
+                    var server = _redis.GetServer(endpoint);
+                    if (server == null || !server.IsConnected) continue;
+
+                    _logger.LogInformation("=== DEBUGGING REDIS KEYS ===");
+
+                    // Get all keys (limit to first 50 for debugging)
+                    var allKeys = server.KeysAsync(pattern: "*", pageSize: 50);
+                    var keyCount = 0;
+                    await foreach (var key in allKeys)
+                    {
+                        _logger.LogInformation("Redis key found: '{Key}'", key);
+                        keyCount++;
+                        if (keyCount >= 20) break; // Limit output
+                    }
+
+                    if (keyCount == 0)
+                    {
+                        _logger.LogWarning("No keys found in Redis at all!");
+                    }
+
+                    _logger.LogInformation("=== END REDIS DEBUG (showed {Count} keys) ===", keyCount);
+                    break; // Only check first endpoint
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to debug Redis keys");
+            }
+        }
+
+        private async Task FallbackCacheInvalidation(string pattern)
+        {
+            try
+            {
+                // Common page and size combinations to try
+                var pageSizes = new[] { 10, 20, 25, 50, 100 };
+                var pages = Enumerable.Range(1, 10); // First 10 pages
+
+                if (pattern.Contains("comments:post:"))
+                {
+                    var postId = ExtractPostIdFromPattern(pattern);
+                    foreach (var pageSize in pageSizes)
+                    {
+                        foreach (var page in pages)
+                        {
+                            var specificKey = $"comments:post:{postId}:page:{page}:size:{pageSize}";
+                            await _cache.RemoveAsync(specificKey);
+                        }
+                    }
+                }
+                else if (pattern.Contains("comments:user:"))
+                {
+                    var userId = ExtractUserIdFromPattern(pattern);
+                    foreach (var pageSize in pageSizes)
+                    {
+                        foreach (var page in pages)
+                        {
+                            var specificKey = $"comments:user:{userId}:page:{page}:size:{pageSize}";
+                            await _cache.RemoveAsync(specificKey);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Fallback cache invalidation failed for pattern {Pattern}", pattern);
+            }
+        }
+
+        private string ExtractPostIdFromPattern(string pattern)
+        {
+            // Extract postId from pattern like "comments:post:123:*"
+            var parts = pattern.Split(':');
+            return parts.Length >= 3 ? parts[2] : "";
+        }
+
+        private string ExtractUserIdFromPattern(string pattern)
+        {
+            // Extract userId from pattern like "comments:user:userId123:*"
+            var parts = pattern.Split(':');
+            return parts.Length >= 3 ? parts[2] : "";
         }
     }
 

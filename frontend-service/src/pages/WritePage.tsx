@@ -101,7 +101,7 @@ const Write: React.FC = () => {
     },
     onSuccess: (res) => {
       toast.success('Post has been created successfully!');
-      navigate(`/${res.data.slug}`);
+      navigate(`/${res.data.post.slug}`);
       // Clear form
       resetForm();
     },
