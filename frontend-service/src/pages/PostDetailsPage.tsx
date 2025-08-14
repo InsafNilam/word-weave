@@ -20,7 +20,7 @@ interface Post {
   img?: string;
   category: string;
   createdAt: string;
-  author: User;
+  author?: User;
 }
 
 const fetchPost = async (slug: string | undefined): Promise<Post> => {
@@ -157,9 +157,9 @@ const PostDetailsPage = () => {
           <h1 className="mb-4 text-sm font-medium">Author</h1>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-8">
-              {data.author.img && (
+              {data?.author?.img && (
                 <Image
-                  src={data.author.img}
+                  src={data?.author?.img}
                   className="w-12 h-12 rounded-full object-cover"
                   w={48}
                   h={48}

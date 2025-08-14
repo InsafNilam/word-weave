@@ -8,7 +8,7 @@ interface Post {
   id: number;
   slug?: string;
   is_featured?: boolean;
-  author: {
+  author?: {
     id: string;
     username?: string;
   };
@@ -232,7 +232,7 @@ const PostMenuActions = ({ post }: PostMenuActionsProps) => {
           )}
         </div>
       )}
-      {user && (post.author?.username === user.username || isAdmin) && (
+      {user && (post?.author?.username === user.username || isAdmin) && (
         <div
           className="flex items-center gap-2 py-2 text-sm cursor-pointer"
           onClick={handleDelete}

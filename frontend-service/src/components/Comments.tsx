@@ -13,7 +13,7 @@ export interface CommentType {
   id: number;
   description: string;
   createdAt: string | Date;
-  author: User;
+  author?: User;
 }
 
 const fetchComments = async (postId: number): Promise<CommentType[]> => {
