@@ -1,0 +1,5 @@
+require_relative 'base_client'
+require_relative 'user_client'
+require_relative 'post_client'
+require_relative 'like_client'
+require_relative 'comment_client'

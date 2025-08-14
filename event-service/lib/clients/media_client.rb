@@ -7,8 +7,8 @@ module EventService
   module GrpcClients
     class MediaClient < BaseClient
       def initialize(host = nil, port = nil, logger = nil)
-        host ||= EventService.configuration.media_service_host || 'media-service'
-        port ||= EventService.configuration.media_service_port || 50054
+        host ||= EventService.configuration.services[:media][:host] || 'media-service'
+        port ||= EventService.configuration.services[:media][:port] || 50056
         super(host, port, logger)
       end
 

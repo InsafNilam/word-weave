@@ -7,8 +7,8 @@ module EventService
   module GrpcClients
     class UserClient < BaseClient
       def initialize(host = nil, port = nil, logger = nil)
-        host ||= EventService.configuration.user_service_host || 'user-service'
-        port ||= EventService.configuration.user_service_port || 50052
+        host ||= EventService.configuration.services[:user][:host] || 'user-service'
+        port ||= EventService.configuration.services[:user][:port] || 50051
         super(host, port, logger)
       end
 

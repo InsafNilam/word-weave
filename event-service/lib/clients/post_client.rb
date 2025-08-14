@@ -7,8 +7,8 @@ module EventService
   module GrpcClients
     class PostClient < BaseClient
       def initialize(host = nil, port = nil, logger = nil)
-        host ||= EventService.configuration.post_service_host || 'post-service'
-        port ||= EventService.configuration.post_service_port || 50051
+        host ||= EventService.configuration.services[:post][:host] || 'post-service'
+        port ||= EventService.configuration.services[:post][:port] || 50052
         super(host, port, logger)
       end
 

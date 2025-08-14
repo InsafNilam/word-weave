@@ -2,7 +2,7 @@
 # Source: comment.proto for package 'comment'
 
 require 'grpc'
-require 'comment_pb'
+require_relative 'comment_pb'
 
 module Comment
   module CommentService

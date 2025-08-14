@@ -7,8 +7,8 @@ module EventService
   module GrpcClients
     class LikeClient < BaseClient
       def initialize(host = nil, port = nil, logger = nil)
-        host ||= EventService.configuration.like_service_host || 'like-service'
-        port ||= EventService.configuration.like_service_port || 50053
+        host ||= EventService.configuration.services[:like][:host] || 'like-service'
+        port ||= EventService.configuration.services[:like][:port] || 50053
         super(host, port, logger)
       end
 

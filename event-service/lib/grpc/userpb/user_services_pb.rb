@@ -16,6 +16,7 @@ module User
 
       rpc :ListUsers, ::User::ListUsersRequest, ::User::ListUsersResponse
       rpc :GetUser, ::User::GetUserRequest, ::User::GetUserResponse
+      rpc :GetLocalUser, ::User::GetUserRequest, ::User::GetUserResponse
       rpc :CreateUser, ::User::CreateUserRequest, ::User::CreateUserResponse
       rpc :UpdateUser, ::User::UpdateUserRequest, ::User::UpdateUserResponse
       rpc :DeleteUser, ::User::DeleteUserRequest, ::User::DeleteUserResponse

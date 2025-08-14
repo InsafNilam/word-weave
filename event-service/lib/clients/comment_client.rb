@@ -7,8 +7,8 @@ module EventService
   module GrpcClients
     class CommentClient < BaseClient
       def initialize(host = nil, port = nil, logger = nil)
-        host ||= EventService.configuration.comment_service_host || 'comment-service'
-        port ||= EventService.configuration.comment_service_port || 50052
+        host ||= EventService.configuration.services[:comment][:host] || 'comment-service'
+        port ||= EventService.configuration.services[:comment][:post] || 50054
         super(host, port, logger)
       end
 
