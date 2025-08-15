@@ -99,18 +99,6 @@ impl LikesService for LikesServiceImpl {
             }));
         }
 
-        let user = user_client
-            .get_user(req.user_id.clone())
-            .await
-            .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
-
-        let db_user_id = user
-            .user
-            .as_ref()
-            .ok_or_else(|| Status::not_found("User not found"))?
-            .id
-            .clone();
-
         // Validate post exists before allowing it to be liked
         if !post_client
             .post_exists(req.post_id)
@@ -123,6 +111,23 @@ impl LikesService for LikesServiceImpl {
                 liked_at: None,
             }));
         }
+
+        let db_user_id = if req.user_id.starts_with("user_") {
+            // Clerk ID → fetch actual DB ID
+            let user = user_client
+                .get_user(req.user_id.clone())
+                .await
+                .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
+
+            user.user
+                .as_ref()
+                .ok_or_else(|| Status::not_found("User not found"))?
+                .id
+                .clone()
+        } else {
+            // Already a DB ID → use as is
+            req.user_id.clone()
+        };
 
         match self.repository.create_like(&db_user_id, &req.post_id).await {
             Ok(like) => {
@@ -158,17 +163,22 @@ impl LikesService for LikesServiceImpl {
 
         Self::validate_ids(&req.user_id, &req.post_id)?;
 
-        let user = user_client
-            .get_user(req.user_id.clone())
-            .await
-            .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
+        let db_user_id = if req.user_id.starts_with("user_") {
+            // Clerk ID → fetch actual DB ID
+            let user = user_client
+                .get_user(req.user_id.clone())
+                .await
+                .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
 
-        let db_user_id = user
-            .user
-            .as_ref()
-            .ok_or_else(|| Status::not_found("User not found"))?
-            .id
-            .clone();
+            user.user
+                .as_ref()
+                .ok_or_else(|| Status::not_found("User not found"))?
+                .id
+                .clone()
+        } else {
+            // Already a DB ID → use as is
+            req.user_id.clone()
+        };
 
         match self.repository.delete_like(&db_user_id, &req.post_id).await {
             Ok(deleted) => {
@@ -212,17 +222,22 @@ impl LikesService for LikesServiceImpl {
             return Err(Status::invalid_argument("User ID cannot be empty"));
         }
 
-        let user = user_client
-            .get_user(req.user_id.clone())
-            .await
-            .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
+        let db_user_id = if req.user_id.starts_with("user_") {
+            // Clerk ID → fetch actual DB ID
+            let user = user_client
+                .get_user(req.user_id.clone())
+                .await
+                .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
 
-        let db_user_id = user
-            .user
-            .as_ref()
-            .ok_or_else(|| Status::not_found("User not found"))?
-            .id
-            .clone();
+            user.user
+                .as_ref()
+                .ok_or_else(|| Status::not_found("User not found"))?
+                .id
+                .clone()
+        } else {
+            // Already a DB ID → use as is
+            req.user_id.clone()
+        };
 
         let params = PaginationParams::new(req.page, req.limit);
 
@@ -315,17 +330,22 @@ impl LikesService for LikesServiceImpl {
 
         Self::validate_ids(&req.user_id, &req.post_id)?;
 
-        let user = user_client
-            .get_user(req.user_id.clone())
-            .await
-            .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
+        let db_user_id = if req.user_id.starts_with("user_") {
+            // Clerk ID → fetch actual DB ID
+            let user = user_client
+                .get_user(req.user_id.clone())
+                .await
+                .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
 
-        let db_user_id = user
-            .user
-            .as_ref()
-            .ok_or_else(|| Status::not_found("User not found"))?
-            .id
-            .clone();
+            user.user
+                .as_ref()
+                .ok_or_else(|| Status::not_found("User not found"))?
+                .id
+                .clone()
+        } else {
+            // Already a DB ID → use as is
+            req.user_id.clone()
+        };
 
         match self
             .repository
@@ -393,17 +413,25 @@ impl LikesService for LikesServiceImpl {
         let mut db_user_ids = Vec::with_capacity(req.user_ids.len());
         if !req.user_ids.is_empty() {
             for external_user_id in &req.user_ids {
-                let user_resp = user_client
-                    .get_user(external_user_id.clone())
-                    .await
-                    .map_err(|e| Status::internal(format!("Failed to get user details: {}", e)))?;
+                let db_user_id = if external_user_id.starts_with("user_") {
+                    // Clerk ID → fetch DB ID
+                    let user_resp = user_client
+                        .get_user(external_user_id.clone())
+                        .await
+                        .map_err(|e| {
+                            Status::internal(format!("Failed to get user details: {}", e))
+                        })?;
 
-                let db_user_id = user_resp
-                    .user
-                    .as_ref()
-                    .ok_or_else(|| Status::not_found("User not found"))?
-                    .id
-                    .clone();
+                    user_resp
+                        .user
+                        .as_ref()
+                        .ok_or_else(|| Status::not_found("User not found"))?
+                        .id
+                        .clone()
+                } else {
+                    // Already a DB ID → use as is
+                    external_user_id.clone()
+                };
 
                 db_user_ids.push(db_user_id);
             }

@@ -84,11 +84,58 @@ impl UserClient {
         }
     }
 
+    pub async fn get_local_user(&mut self, user_id: String) -> Result<GetUserResponse> {
+        debug!("Fetching local user with ID: {}", user_id);
+
+        if user_id.is_empty() {
+            return Err(anyhow!("User ID cannot be empty"));
+        }
+
+        let request = tonic::Request::new(GetUserRequest {
+            user_id: user_id.clone(),
+        });
+
+        match self.client.get_local_user(request).await {
+            Ok(response) => {
+                let user_response = response.into_inner();
+
+                if user_response.success {
+                    info!("Successfully fetched local user: {}", user_id);
+                    debug!("User response: {:?}", user_response);
+                } else {
+                    warn!(
+                        "Failed to fetch local user {}: {}",
+                        user_id, user_response.message
+                    );
+                }
+
+                Ok(user_response)
+            }
+            Err(status) => {
+                error!(
+                    "gRPC error while fetching local user {}: {:?}",
+                    user_id, status
+                );
+                Err(anyhow!("Failed to get local user: {}", status.message()))
+            }
+        }
+    }
+
     /// Check if user exists (convenience method)
     pub async fn user_exists(&mut self, user_id: String) -> Result<bool> {
-        match self.get_user(user_id).await {
-            Ok(response) => Ok(response.success && response.user.is_some()),
-            Err(_) => Ok(false), // Assume user doesn't exist if there's an error
+        // Check if it's a Clerk ID
+        if user_id.starts_with("user_") {
+            // Remote fetch by Clerk ID
+            match self.get_user(user_id).await {
+                Ok(response) => Ok(response.success && response.user.is_some()),
+                Err(_) => Ok(false), // Assume user doesn't exist if error
+            }
+        } else {
+            // Local DB fetch by _id
+            match self.get_local_user(user_id).await {
+                Ok(response) => Ok(response.success && response.user.is_some()),
+                Err(_) => Ok(false), // Assume user doesn't exist if error
+            }
         }
     }
 

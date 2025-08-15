@@ -23,6 +23,9 @@ use crate::{
 
 // Include the generated gRPC code
 pub mod proto {
+    pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
+        tonic::include_file_descriptor_set!("like_service_descriptor");
+
     tonic::include_proto!("like");
     pub mod user {
         tonic::include_proto!("user");
@@ -68,13 +71,19 @@ async fn main() -> Result<()> {
     // Build server address
     let addr: SocketAddr = format!("{}:{}", config.host, config.port).parse()?;
 
-    // Start gRPC server
     info!("gRPC server listening on {}", addr);
+
+    // Build Tonic server with reflection enabled
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(proto::FILE_DESCRIPTOR_SET)
+        .build_v1()
+        .unwrap();
 
     Server::builder()
         .add_service(proto::likes_service_server::LikesServiceServer::new(
             likes_service,
         ))
+        .add_service(reflection_service) // enable reflection
         .serve_with_shutdown(addr, async {
             signal::ctrl_c()
                 .await

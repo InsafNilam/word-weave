@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 # gRPC and Protocol Buffers
 tonic = "0.13.1"
+tonic-reflection = "=0.13.1"
 prost = "0.13.5"
 prost-types = "0.13.5"
 
