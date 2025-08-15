@@ -47,7 +47,7 @@ module EventService
         begin
           response = @stub.get_post(request, call_options)
           logger.debug("Retrieved post: #{post_id}")
-          response.post if response.success
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "GetPost")
           nil
