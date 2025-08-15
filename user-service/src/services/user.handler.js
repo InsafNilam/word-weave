@@ -115,7 +115,7 @@ export class UserHandler {
         throw new Error("Clerk user ID is required for deletion");
       }
 
-      const deletedUser = await User.findOneAndDelete({
+      const deletedUser = await User.findOne({
         clerk_user_id: clerkUserId,
       });
 

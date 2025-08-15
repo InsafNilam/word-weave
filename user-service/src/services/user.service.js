@@ -133,19 +133,23 @@ export const userService = {
         throw new Error("User ID is required");
       }
 
-      console.log("Fetching user from Clerk:", user_id);
-
-      const clerkUser = await clerkClient.users.getUser(user_id);
-      if (!clerkUser) {
-        throw new Error(`User not found in Clerk: ${user_id}`);
+      let clerkUser = null;
+      try {
+        clerkUser = await clerkClient.users.getUser(user_id);
+      } catch (err) {
+        console.warn(`Clerk user not found: ${user_id}`);
       }
 
       // Fetch local DB user
       const localUser = await User.findOne({ clerk_user_id: user_id }).lean();
 
+      if (!localUser) {
+        throw new Error(`User not found in MongoDB: ${user_id}`);
+      }
+
       // Merge Clerk + local DB data
       const user = {
-        ...clerkUser,
+        ...(clerkUser || {}),
         _id: localUser._id || null,
         bio: localUser.bio || null,
       };
@@ -180,16 +184,22 @@ export const userService = {
       // Fetch local DB user
       const localUser = await User.findById(user_id).lean();
 
-      const clerkUser = await clerkClient.users.getUser(
-        localUser.clerk_user_id
-      );
-      if (!clerkUser) {
-        throw new Error(`User not found in Clerk: ${localUser.clerk_user_id}`);
+      if (!localUser) {
+        throw new Error(`User not found in MongoDB: ${user_id}`);
+      }
+
+      let clerkUser = null;
+      if (localUser.clerk_user_id) {
+        try {
+          clerkUser = await clerkClient.users.getUser(localUser.clerk_user_id);
+        } catch (err) {
+          console.warn(`Clerk user not found: ${localUser.clerk_user_id}`);
+        }
       }
 
       // Merge Clerk + local DB data
       const user = {
-        ...clerkUser,
+        ...(clerkUser || {}),
         _id: localUser._id || null,
         bio: localUser.bio || null,
       };
@@ -252,9 +262,10 @@ export const userService = {
       const localUser = await User.findOne({
         clerk_user_id: newUser.id,
       }).lean();
+
       // Merge Clerk + local DB data
       const user = {
-        ...clerkUser,
+        ...(newUser || {}),
         _id: localUser._id || null,
         bio: localUser.bio || null,
       };
@@ -314,12 +325,17 @@ export const userService = {
         );
       }
 
-      const updatedClerkUser = await clerkClient.users.updateUser(user_id, {
-        ...(username && { username }),
-        ...(first_name && { firstName: first_name }),
-        ...(last_name && { lastName: last_name }),
-        ...(role && { publicMetadata: { role } }),
-      });
+      let updatedClerkUser = null;
+      try {
+        updatedClerkUser = await clerkClient.users.updateUser(user_id, {
+          ...(username && { username }),
+          ...(first_name && { firstName: first_name }),
+          ...(last_name && { lastName: last_name }),
+          ...(role && { publicMetadata: { role } }),
+        });
+      } catch (err) {
+        console.warn(`Clerk user not found: ${user_id}`);
+      }
 
       let updatedLocalUser = null;
       if (bio || username) {
@@ -333,8 +349,14 @@ export const userService = {
         ).lean();
       }
 
+      if (!updatedClerkUser && !updatedLocalUser) {
+        throw new Error(
+          `User not found in either Clerk or MongoDB: ${user_id}`
+        );
+      }
+
       const updatedUser = {
-        ...updatedClerkUser,
+        ...(updatedClerkUser || {}),
         _id: updatedLocalUser?._id || null,
         bio: updatedLocalUser?.bio || null,
       };
@@ -390,10 +412,22 @@ export const userService = {
       const localDeletedUser = await User.findOne({
         clerk_user_id: user_id,
       }).lean();
-      const clerkDeletedUser = await clerkClient.users.deleteUser(user_id);
+
+      let clerkDeletedUser = null;
+      try {
+        clerkDeletedUser = await clerkClient.users.deleteUser(user_id);
+      } catch (err) {
+        console.warn(`Clerk user not found: ${user_id}`);
+      }
+
+      if (!clerkDeletedUser && !localDeletedUser) {
+        throw new Error(
+          `User not found in either Clerk or MongoDB: ${user_id}`
+        );
+      }
 
       const deletedUser = {
-        ...clerkDeletedUser,
+        ...(clerkDeletedUser || {}),
         _id: localDeletedUser._id || null,
         bio: localDeletedUser.bio || null,
       };
@@ -486,15 +520,18 @@ export const userService = {
         throw new Error("User ID and role are required");
       }
 
-      const updatedUser = await clerkClient.users.updateUserMetadata(user_id, {
-        publicMetadata: { role },
-      });
-      // Fetch local DB user
-      const localUser = await User.findOne({ clerk_user_id: user_id }).lean();
+      let updatedUser = null;
+      try {
+        updatedUser = await clerkClient.users.updateUserMetadata(user_id, {
+          publicMetadata: { role },
+        });
+      } catch (err) {
+        console.warn(`Clerk user not found: ${user_id}`);
+      }
 
       // Merge local user data with updated user data
       const user = {
-        ...updatedUser,
+        ...(updatedUser || {}),
         _id: localUser._id || null,
         bio: localUser.bio || null,
       };

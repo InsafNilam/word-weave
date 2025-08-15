@@ -12,28 +12,39 @@ export const normalizeToArray = (val) => {
 
 // Helper method to transform user data
 export const transformUser = (user) => {
-  if (!user || !(user._id || user.id)) {
-    throw new Error("Invalid user data received");
+  if (!user) {
+    throw new Error("User data is required");
+  }
+
+  // Check if we have at least a MongoDB ID or Clerk ID
+  if (!user._id && !user.id && !user.clerk_user_id) {
+    throw new Error("Invalid user data: missing user identifier");
   }
 
   return {
-    id: user._id || "",
-    clerk_user_id: user.id || "",
+    id: user._id?.toString() || user.id || "",
+    clerk_user_id: user.clerk_user_id || user.id || "",
     username: user.username || "",
-    email: user.emailAddresses?.[0]?.emailAddress || "",
-    image_url: user.hasImage ? user.imageUrl : "",
+    email: user.emailAddresses?.[0]?.emailAddress || user.email || "",
+    image_url: user.hasImage ? user.imageUrl : user.imageUrl || "",
     bio: user.bio || "",
-    role: user.publicMetadata?.role || "user",
-    created_at: user.createdAt ? new Date(user.createdAt).toISOString() : null,
-    updated_at: user.updatedAt ? new Date(user.updatedAt).toISOString() : null,
+    role: user.publicMetadata?.role || user.role || "user",
+    created_at: user.createdAt
+      ? new Date(user.createdAt).toISOString()
+      : user.created_at || null,
+    updated_at: user.updatedAt
+      ? new Date(user.updatedAt).toISOString()
+      : user.updated_at || null,
     last_active_at: user.lastActiveAt
       ? new Date(user.lastActiveAt).toISOString()
-      : null,
+      : user.last_active_at || null,
     is_active: user.lastActiveAt
       ? new Date(user.lastActiveAt).toISOString()
-      : null,
+      : user.last_active_at || null,
     activity_status: user.lastActiveAt
       ? getActivityStatus(user.lastActiveAt)
+      : user.last_active_at
+      ? getActivityStatus(user.last_active_at)
       : "inactive",
   };
 };
