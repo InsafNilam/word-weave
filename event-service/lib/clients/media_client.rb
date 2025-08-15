@@ -13,7 +13,7 @@ module EventService
       end
 
       def get_upload_auth
-        request = MediaPb::GetUploadAuthRequest.new
+        request = Media::GetUploadAuthRequest.new
 
         begin
           response = @stub.get_upload_auth(request, call_options)
@@ -31,7 +31,7 @@ module EventService
       def get_file_details(file_id)
         return nil if file_id.nil? || file_id.empty?
 
-        request = MediaPb::GetFileDetailsRequest.new(file_id: file_id)
+        request = Media::GetFileDetailsRequest.new(file_id: file_id)
 
         begin
           response = @stub.get_file_details(request, call_options)
@@ -47,7 +47,7 @@ module EventService
       end
 
       def get_files(skip: 0, limit: 10, search_query: nil, tags: [], file_type: nil, sort: nil, path: nil)
-        request = MediaPb::GetFilesRequest.new(
+        request = Media::GetFilesRequest.new(
           skip: skip,
           limit: limit,
           search_query: search_query,
@@ -73,7 +73,7 @@ module EventService
       def upload_file(file_data:, filename:, folder: nil, tags: [], use_unique_filename: true, custom_coordinates: nil)
         return nil if file_data.nil? || file_data.empty? || filename.nil? || filename.empty?
 
-        request = MediaPb::UploadFileRequest.new(
+        request = Media::UploadFileRequest.new(
           file_data: file_data,
           filename: filename,
           folder: folder,
@@ -98,7 +98,7 @@ module EventService
       def update_file_details(file_id:, tags: nil, custom_coordinates: nil, custom_metadata: {})
         return nil if file_id.nil? || file_id.empty?
 
-        request = MediaPb::UpdateFileDetailsRequest.new(
+        request = Media::UpdateFileDetailsRequest.new(
           file_id: file_id,
           tags: tags || [],
           custom_coordinates: custom_coordinates,
@@ -121,7 +121,7 @@ module EventService
       def delete_file(file_id)
         return false if file_id.nil? || file_id.empty?
 
-        request = MediaPb::DeleteFileRequest.new(file_id: file_id)
+        request = Media::DeleteFileRequest.new(file_id: file_id)
 
         begin
           response = @stub.delete_file(request, call_options)
@@ -139,7 +139,7 @@ module EventService
       def delete_multiple_files(file_ids)
         return nil if file_ids.nil? || file_ids.empty?
 
-        request = MediaPb::DeleteMultipleFilesRequest.new(file_ids: file_ids)
+        request = Media::DeleteMultipleFilesRequest.new(file_ids: file_ids)
 
         begin
           response = @stub.delete_multiple_files(request, call_options)
@@ -256,9 +256,8 @@ module EventService
       private
 
       def create_stub
-        MediaPb::MediaService::Stub.new("#{@host}:#{@port}", 
-                                        :this_channel_is_insecure, 
-                                        channel_args: channel_args)
+        Media::MediaService::Stub.new("#{@host}:#{@port}", :this_channel_is_insecure)
+        # Media::MediaService::Service.new
       end
 
       def channel_args

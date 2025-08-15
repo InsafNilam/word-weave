@@ -15,7 +15,7 @@ module EventService
       def like_post(user_id:, post_id:)
         return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
 
-        request = LikePb::LikePostRequest.new(
+        request = Like::LikePostRequest.new(
           user_id: user_id,
           post_id: post_id
         )
@@ -36,7 +36,7 @@ module EventService
       def unlike_post(user_id:, post_id:)
         return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
 
-        request = LikePb::UnlikePostRequest.new(
+        request = Like::UnlikePostRequest.new(
           user_id: user_id,
           post_id: post_id
         )
@@ -57,7 +57,7 @@ module EventService
       def unlike_posts(user_ids: [], post_ids: [])
         return false if (user_ids.nil? || user_ids.empty?) && (post_ids.nil? || post_ids.empty?)
 
-        request = LikePb::UnlikePostsRequest.new(
+        request = Like::UnlikePostsRequest.new(
           user_ids: user_ids || [],
           post_ids: post_ids || []
         )
@@ -78,7 +78,7 @@ module EventService
       def get_user_likes(user_id, page: 1, limit: 10)
         return nil if user_id.nil? || user_id.empty?
 
-        request = LikePb::GetUserLikesRequest.new(
+        request = Like::GetUserLikesRequest.new(
           user_id: user_id,
           page: page,
           limit: limit
@@ -100,7 +100,7 @@ module EventService
       def get_post_likes(post_id, page: 1, limit: 10)
         return nil if post_id.nil? || post_id.empty?
 
-        request = LikePb::GetPostLikesRequest.new(
+        request = Like::GetPostLikesRequest.new(
           post_id: post_id,
           page: page,
           limit: limit
@@ -122,7 +122,7 @@ module EventService
       def is_post_liked?(user_id:, post_id:)
         return false if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
 
-        request = LikePb::IsPostLikedRequest.new(
+        request = Like::IsPostLikedRequest.new(
           user_id: user_id,
           post_id: post_id
         )
@@ -143,7 +143,7 @@ module EventService
       def get_likes_count(post_id)
         return 0 if post_id.nil? || post_id.empty?
 
-        request = LikePb::GetLikesCountRequest.new(post_id: post_id)
+        request = Like::GetLikesCountRequest.new(post_id: post_id)
 
         begin
           response = @stub.get_likes_count(request, call_options)
@@ -159,7 +159,7 @@ module EventService
       end
 
       def health_check
-        request = LikePb::HealthCheckRequest.new
+        request = Like::HealthCheckRequest.new
 
         begin
           response = @stub.health_check(request, call_options)
@@ -205,9 +205,8 @@ module EventService
       private
 
       def create_stub
-        LikePb::LikesService::Stub.new("#{@host}:#{@port}", 
-                                       :this_channel_is_insecure, 
-                                       channel_args: channel_args)
+        Like::LikesService::Stub.new("#{@host}:#{@port}", :this_channel_is_insecure)
+        # Like::LikesService::Service.new
       end
 
       def channel_args

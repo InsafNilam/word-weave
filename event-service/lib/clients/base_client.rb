@@ -31,7 +31,7 @@ module EventService
 
       def call_options
         {
-          timeout: 30,
+          deadline: Time.now + 10,
           metadata: {
             'request-id' => SecureRandom.uuid,
             'timestamp' => Time.now.to_i.to_s

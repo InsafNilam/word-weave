@@ -13,7 +13,7 @@ module EventService
       end
 
       def list_users(limit: 50, offset: 0, email_addresses: [], usernames: [], user_ids: [])
-        request = UserPb::ListUsersRequest.new(
+        request = User::ListUsersRequest.new(
           limit: limit,
           offset: offset,
           email_address: email_addresses,
@@ -37,7 +37,7 @@ module EventService
       def get_user(user_id)
         return nil if user_id.nil? || user_id.empty?
 
-        request = UserPb::GetUserRequest.new(user_id: user_id)
+        request = User::GetUserRequest.new(user_id: user_id)
         
         begin
           response = @stub.get_user(request, call_options)
@@ -52,10 +52,28 @@ module EventService
         end
       end
 
+      def get_local_user(user_id)
+        return nil if user_id.nil? || user_id.empty?
+
+        request = User::GetUserRequest.new(user_id: user_id)
+        
+        begin
+          response = @stub.get_local_user(request, call_options)
+          logger.debug("Retrieved user: #{user_id}")
+          response
+        rescue GRPC::BadStatus => e
+          handle_grpc_error(e, "GetUser")
+          nil
+        rescue StandardError => e
+          logger.error("Unexpected error getting user #{user_id}: #{e.message}")
+          nil
+        end
+      end
+
       def create_user(email:, password:, username: nil, first_name: nil, last_name: nil, role: nil)
         return nil if email.nil? || email.empty? || password.nil? || password.empty?
 
-        request = UserPb::CreateUserRequest.new(
+        request = User::CreateUserRequest.new(
           email: email,
           password: password,
           username: username,
@@ -80,7 +98,7 @@ module EventService
       def update_user(user_id:, username: nil, first_name: nil, last_name: nil, role: nil)
         return nil if user_id.nil? || user_id.empty?
 
-        request = UserPb::UpdateUserRequest.new(
+        request = User::UpdateUserRequest.new(
           user_id: user_id,
           username: username,
           first_name: first_name,
@@ -104,7 +122,7 @@ module EventService
       def delete_user(user_id)
         return nil if user_id.nil? || user_id.empty?
 
-        request = UserPb::DeleteUserRequest.new(user_id: user_id)
+        request = User::DeleteUserRequest.new(user_id: user_id)
 
         begin
           response = @stub.delete_user(request, call_options)
@@ -120,7 +138,7 @@ module EventService
       end
 
       def get_user_count(email_addresses: [], usernames: [], user_ids: [])
-        request = UserPb::UserFilterRequest.new(
+        request = User::UserFilterRequest.new(
           email_address: email_addresses,
           username: usernames,
           user_id: user_ids
@@ -142,7 +160,7 @@ module EventService
       def update_user_role(user_id, role)
         return nil if user_id.nil? || user_id.empty? || role.nil? || role.empty?
 
-        request = UserPb::UpdateUserRoleRequest.new(
+        request = User::UpdateUserRoleRequest.new(
           user_id: user_id,
           role: role
         )
@@ -163,7 +181,7 @@ module EventService
       def get_oauth_access_token(user_id, provider)
         return nil if user_id.nil? || user_id.empty? || provider.nil? || provider.empty?
 
-        request = UserPb::OAuthTokenRequest.new(
+        request = User::OAuthTokenRequest.new(
           user_id: user_id,
           provider: provider
         )
@@ -171,22 +189,22 @@ module EventService
         begin
           response = @stub.get_o_auth_access_token(request, call_options)
           logger.debug("Retrieved OAuth tokens for user: #{user_id}, provider: #{provider}")
-          response.tokens
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "GetOAuthAccessToken")
-          []
+          nil
         rescue StandardError => e
           logger.error("Unexpected error getting OAuth token for user #{user_id}: #{e.message}")
-          []
+          nil
         end
       end
 
       private
 
       def create_stub
-        UserPb::UserService::Stub.new("#{@host}:#{@port}", 
-                                      :this_channel_is_insecure, 
-                                      channel_args: channel_args)
+        User::UserService::Stub.new("#{@host}:#{@port}", :this_channel_is_insecure)
+        # User::UserService::Service.new
+                                      
       end
 
       def channel_args

@@ -15,7 +15,7 @@ module EventService
       def create_comment(user_id:, post_id:, description:)
         return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id == 0 || description.nil? || description.empty?
 
-        request = CommentPb::CreateCommentRequest.new(
+        request = Comment::CreateCommentRequest.new(
           user_id: user_id,
           post_id: post_id,
           description: description
@@ -37,7 +37,7 @@ module EventService
       def get_comment(comment_id)
         return nil if comment_id.nil? || comment_id == 0
 
-        request = CommentPb::GetCommentRequest.new(id: comment_id)
+        request = Comment::GetCommentRequest.new(id: comment_id)
         
         begin
           response = @stub.get_comment(request, call_options)
@@ -53,9 +53,9 @@ module EventService
       end
 
       def get_comments_by_post(post_id, page: 1, page_size: 10)
-        return [] if post_id.nil? || post_id == 0
+        return nil if post_id.nil? || post_id == 0
 
-        request = CommentPb::GetCommentsByPostRequest.new(
+        request = Comment::GetCommentsByPostRequest.new(
           post_id: post_id,
           page: page,
           page_size: page_size
@@ -75,9 +75,9 @@ module EventService
       end
 
       def get_comments_by_user(user_id, page: 1, page_size: 10)
-        return [] if user_id.nil? || user_id.empty?
+        return nil if user_id.nil? || user_id.empty?
 
-        request = CommentPb::GetCommentsByUserRequest.new(
+        request = Comment::GetCommentsByUserRequest.new(
           user_id: user_id,
           page: page,
           page_size: page_size
@@ -86,20 +86,20 @@ module EventService
         begin
           response = @stub.get_comments_by_user(request, call_options)
           logger.debug("Retrieved #{response.comments.size} comments for user: #{user_id} (page: #{page}, total: #{response.total_count})")
-          response.comments
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "GetCommentsByUser")
-          []
+          nil
         rescue StandardError => e
           logger.error("Unexpected error getting comments for user #{user_id}: #{e.message}")
-          []
+          nil
         end
       end
 
       def update_comment(id:, user_id:, description:)
         return nil if id.nil? || id == 0 || user_id.nil? || user_id.empty? || description.nil? || description.empty?
 
-        request = CommentPb::UpdateCommentRequest.new(
+        request = Comment::UpdateCommentRequest.new(
           id: id,
           user_id: user_id,
           description: description
@@ -121,7 +121,7 @@ module EventService
       def delete_comment(comment_id, user_id, post_id)
         return false if comment_id.nil? || comment_id == 0
 
-        request = CommentPb::DeleteCommentRequest.new(
+        request = Comment::DeleteCommentRequest.new(
           id: comment_id,
           user_id: user_id,
           post_id: post_id
@@ -143,7 +143,7 @@ module EventService
       def delete_comments(user_ids, post_ids)
         return false if (user_ids.nil? || user_ids.empty?) && (post_ids.nil? || post_ids.empty?)
 
-        request = CommentPb::DeleteCommentsRequest.new(
+        request = Comment::DeleteCommentsRequest.new(
           user_ids: user_ids || [],
           post_ids: post_ids || []
         )
@@ -164,7 +164,7 @@ module EventService
       def get_comment_count(post_id)
         return 0 if post_id.nil? || post_id == 0
 
-        request = CommentPb::GetCommentCountRequest.new(post_id: post_id)
+        request = Comment::GetCommentCountRequest.new(post_id: post_id)
 
         begin
           response = @stub.get_comment_count(request, call_options)
@@ -182,9 +182,8 @@ module EventService
       private
 
       def create_stub
-        CommentPb::CommentService::Stub.new("#{@host}:#{@port}", 
-                                            :this_channel_is_insecure, 
-                                            channel_args: channel_args)
+        Comment::CommentService::Stub.new("#{@host}:#{@port}", :this_channel_is_insecure)
+        # Comment::CommentService::Service.new
       end
 
       def channel_args

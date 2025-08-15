@@ -15,7 +15,7 @@ module EventService
       def create_post(user_id:, title:, slug:, desc:, category:, content:, img: nil, is_featured: false)
         return nil if user_id.nil? || user_id.empty? || title.nil? || title.empty?
 
-        request = PostPb::CreatePostRequest.new(
+        request = Post::CreatePostRequest.new(
           user_id: user_id,
           img: img,
           title: title,
@@ -42,7 +42,7 @@ module EventService
       def get_post(post_id)
         return nil if post_id.nil? || post_id == 0
 
-        request = PostPb::GetPostRequest.new(id: post_id)
+        request = Post::GetPostRequest.new(id: post_id)
         
         begin
           response = @stub.get_post(request, call_options)
@@ -60,7 +60,7 @@ module EventService
       def get_post_by_slug(slug)
         return nil if slug.nil? || slug.empty?
 
-        request = PostPb::GetPostBySlugRequest.new(slug: slug)
+        request = Post::GetPostBySlugRequest.new(slug: slug)
         
         begin
           response = @stub.get_post_by_slug(request, call_options)
@@ -78,7 +78,7 @@ module EventService
       def update_post(id:, user_id: nil, img: nil, title: nil, slug: nil, desc: nil, category: nil, content: nil, is_featured: nil)
         return nil if id.nil? || id == 0
 
-        request = PostPb::UpdatePostRequest.new(
+        request = Post::UpdatePostRequest.new(
           id: id,
           user_id: user_id,
           img: img,
@@ -106,7 +106,7 @@ module EventService
       def delete_post(post_id, user_id = nil)
         return false if post_id.nil? || post_id == 0
 
-        request = PostPb::DeletePostRequest.new(
+        request = Post::DeletePostRequest.new(
           id: post_id,
           user_id: user_id
         )
@@ -124,17 +124,31 @@ module EventService
         end
       end
 
-      def delete_posts(post_ids, user_ids = [])
-        return false if post_ids.nil? || post_ids.empty?
-
-        request = PostPb::DeletePostsRequest.new(
+      def delete_posts(post_ids = [], user_ids = [])
+        # Ensure both parameters are arrays and not nil
+        post_ids = Array(post_ids)
+        user_ids = Array(user_ids)
+        
+        # Return false if both arrays are empty
+        return false if post_ids.empty? && user_ids.empty?
+        
+        request = Post::DeletePostsRequest.new(
           ids: post_ids,
           user_ids: user_ids
         )
-
+        
         begin
           response = @stub.delete_posts(request, call_options)
-          logger.debug("Deleted #{post_ids.size} posts")
+          
+          # Log what was deleted
+          if !post_ids.empty? && !user_ids.empty?
+            logger.debug("Deleted posts with IDs: #{post_ids} for users: #{user_ids}")
+          elsif !post_ids.empty?
+            logger.debug("Deleted #{post_ids.size} posts by IDs")
+          elsif !user_ids.empty?
+            logger.debug("Deleted posts for #{user_ids.size} users")
+          end
+          
           response.success
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "DeletePosts")
@@ -145,8 +159,8 @@ module EventService
         end
       end
 
-      def list_posts(page: 1, limit: 10, category: nil, user_id: nil)
-        request = PostPb::ListPostsRequest.new(
+      def list_posts(user_id: nil, category: nil, page: 1, limit: 10)
+        request = Post::ListPostsRequest.new(
           page: page,
           limit: limit,
           category: category,
@@ -167,9 +181,9 @@ module EventService
       end
 
       def get_posts_by_user(user_id, page: 1, limit: 10)
-        return [] if user_id.nil? || user_id.empty?
+        return nil if user_id.nil? || user_id.empty?
 
-        request = PostPb::GetPostsByUserRequest.new(
+        request = Post::GetPostsByUserRequest.new(
           user_id: user_id,
           page: page,
           limit: limit
@@ -178,20 +192,20 @@ module EventService
         begin
           response = @stub.get_posts_by_user(request, call_options)
           logger.debug("Retrieved #{response.posts.size} posts for user: #{user_id}")
-          response.posts
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "GetPostsByUser")
-          []
+          nil
         rescue StandardError => e
           logger.error("Unexpected error getting posts for user #{user_id}: #{e.message}")
-          []
+          nil
         end
       end
 
       def get_posts_by_category(category, page: 1, limit: 10)
-        return [] if category.nil? || category.empty?
+        return nil if category.nil? || category.empty?
 
-        request = PostPb::GetPostsByCategoryRequest.new(
+        request = Post::GetPostsByCategoryRequest.new(
           category: category,
           page: page,
           limit: limit
@@ -200,36 +214,36 @@ module EventService
         begin
           response = @stub.get_posts_by_category(request, call_options)
           logger.debug("Retrieved #{response.posts.size} posts for category: #{category}")
-          response.posts
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "GetPostsByCategory")
-          []
+          nil
         rescue StandardError => e
           logger.error("Unexpected error getting posts for category #{category}: #{e.message}")
-          []
+          nil
         end
       end
 
       def get_featured_posts(limit: 10)
-        request = PostPb::GetFeaturedPostsRequest.new(limit: limit)
+        request = Post::GetFeaturedPostsRequest.new(limit: limit)
         
         begin
           response = @stub.get_featured_posts(request, call_options)
           logger.debug("Retrieved #{response.posts.size} featured posts")
-          response.posts
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "GetFeaturedPosts")
-          []
+          nil
         rescue StandardError => e
           logger.error("Unexpected error getting featured posts: #{e.message}")
-          []
+          nil
         end
       end
 
       def search_posts(query, page: 1, limit: 10)
-        return [] if query.nil? || query.empty?
+        return nil if query.nil? || query.empty?
 
-        request = PostPb::SearchPostsRequest.new(
+        request = Post::SearchPostsRequest.new(
           query: query,
           page: page,
           limit: limit
@@ -238,20 +252,20 @@ module EventService
         begin
           response = @stub.search_posts(request, call_options)
           logger.debug("Found #{response.posts.size} posts for query: #{query}")
-          response.posts
+          response
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "SearchPosts")
-          []
+          nil
         rescue StandardError => e
           logger.error("Unexpected error searching posts for query #{query}: #{e.message}")
-          []
+          nil
         end
       end
 
       def increment_visit(post_id)
         return nil if post_id.nil? || post_id == 0
 
-        request = PostPb::IncrementVisitRequest.new(id: post_id)
+        request = Post::IncrementVisitRequest.new(id: post_id)
 
         begin
           response = @stub.increment_visit(request, call_options)
@@ -267,7 +281,7 @@ module EventService
       end
 
       def count_posts(user_id: nil, category: nil, is_featured: nil)
-        request = PostPb::CountPostsRequest.new(
+        request = Post::CountPostsRequest.new(
           user_id: user_id,
           category: category,
           is_featured: is_featured
@@ -289,9 +303,8 @@ module EventService
       private
 
       def create_stub
-        PostPb::PostService::Stub.new("#{@host}:#{@port}", 
-                                      :this_channel_is_insecure, 
-                                      channel_args: channel_args)
+        Post::PostService::Stub.new("#{@host}:#{@port}", :this_channel_is_insecure)
+        # Post::PostService::Service.new
       end
 
       def channel_args
