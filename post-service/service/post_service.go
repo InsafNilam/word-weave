@@ -52,16 +52,26 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 		}
 	}
 
-	user, err := s.userClient.GetUser(ctx, req.UserId)
-	if err != nil {
-		return &pb.PostResponse{
-			Success: false,
-			Message: fmt.Sprintf("Failed to get user details: %v", err),
-		}, nil
+	var userId string
+	if req.UserId != "" {
+		if strings.HasPrefix(req.UserId, "user_") {
+			// Clerk ID → fetch actual DB ID
+			user, err := s.userClient.GetUser(ctx, req.UserId)
+			if err != nil {
+				return &pb.PostResponse{
+					Success: false,
+					Message: fmt.Sprintf("Failed to get user details for user %s: %v", req.UserId, err),
+				}, nil
+			}
+			userId = user.GetId()
+		} else {
+			// Already a DB ID → use as is
+			userId = req.UserId
+		}
 	}
 
 	post := &models.Post{
-		UserID:     user.GetId(),
+		UserID:     userId,
 		Img:        req.Img,
 		Title:      req.Title,
 		Slug:       slug,
@@ -71,7 +81,7 @@ func (s *PostServiceServer) CreatePost(ctx context.Context, req *pb.CreatePostRe
 		IsFeatured: req.IsFeatured,
 	}
 
-	err = s.repo.Create(post)
+	err := s.repo.Create(post)
 	if err != nil {
 		return &pb.PostResponse{
 			Success: false,
@@ -150,16 +160,26 @@ func (s *PostServiceServer) UpdatePost(ctx context.Context, req *pb.UpdatePostRe
 		}, nil
 	}
 
-	user, err := s.userClient.GetUser(ctx, req.UserId)
-	if err != nil {
-		return &pb.PostResponse{
-			Success: false,
-			Message: fmt.Sprintf("Failed to get user details: %v", err),
-		}, nil
+	var userId string
+	if req.UserId != "" {
+		if strings.HasPrefix(req.UserId, "user_") {
+			// Clerk ID → fetch actual DB ID
+			user, err := s.userClient.GetUser(ctx, req.UserId)
+			if err != nil {
+				return &pb.PostResponse{
+					Success: false,
+					Message: fmt.Sprintf("Failed to get user details for user %s: %v", req.UserId, err),
+				}, nil
+			}
+			userId = user.GetId()
+		} else {
+			// Already a DB ID → use as is
+			userId = req.UserId
+		}
 	}
 
 	// Check if user owns the post
-	if existingPost.UserID != user.GetId() {
+	if existingPost.UserID != userId {
 		return &pb.PostResponse{
 			Success: false,
 			Message: "Unauthorized to update this post",
@@ -214,16 +234,26 @@ func (s *PostServiceServer) PatchPost(ctx context.Context, req *pb.PatchPostRequ
 		}, nil
 	}
 
-	user, err := s.userClient.GetUser(ctx, req.UserId)
-	if err != nil {
-		return &pb.PostResponse{
-			Success: false,
-			Message: fmt.Sprintf("Failed to get user details: %v", err),
-		}, nil
+	var userId string
+	if req.UserId != "" {
+		if strings.HasPrefix(req.UserId, "user_") {
+			// Clerk ID → fetch actual DB ID
+			user, err := s.userClient.GetUser(ctx, req.UserId)
+			if err != nil {
+				return &pb.PostResponse{
+					Success: false,
+					Message: fmt.Sprintf("Failed to get user details for user %s: %v", req.UserId, err),
+				}, nil
+			}
+			userId = user.GetId()
+		} else {
+			// Already a DB ID → use as is
+			userId = req.UserId
+		}
 	}
 
 	// Check if user owns the post
-	if existingPost.UserID != user.GetId() {
+	if existingPost.UserID != userId {
 		return &pb.PostResponse{
 			Success: false,
 			Message: "Unauthorized to update this post",
@@ -352,19 +382,29 @@ func (s *PostServiceServer) PatchPost(ctx context.Context, req *pb.PatchPostRequ
 }
 
 func (s *PostServiceServer) DeletePost(ctx context.Context, req *pb.DeletePostRequest) (*pb.DeletePostResponse, error) {
-	user, err := s.userClient.GetUser(ctx, req.UserId)
-	if err != nil {
-		return &pb.DeletePostResponse{
-			Success: false,
-			Message: fmt.Sprintf("Failed to get user details: %v", err),
-		}, nil
+	var userId string
+	if req.UserId != "" {
+		if strings.HasPrefix(req.UserId, "user_") {
+			// Clerk ID → fetch actual DB ID
+			user, err := s.userClient.GetUser(ctx, req.UserId)
+			if err != nil {
+				return &pb.DeletePostResponse{
+					Success: false,
+					Message: fmt.Sprintf("Failed to get user details for user %s: %v", req.UserId, err),
+				}, nil
+			}
+			userId = user.GetId()
+		} else {
+			// Already a DB ID → use as is
+			userId = req.UserId
+		}
 	}
 
-	err = s.repo.Delete(uint(req.Id), user.GetId())
+	err := s.repo.Delete(uint(req.Id), userId)
 	if err != nil {
 		return &pb.DeletePostResponse{
 			Success: false,
-			Message: err.Error(),
+			Message: fmt.Sprintf("Failed to delete post: %v", err),
 		}, nil
 	}
 
@@ -399,18 +439,24 @@ func (s *PostServiceServer) ListPosts(ctx context.Context, req *pb.ListPostsRequ
 		limit = 10
 	}
 	if limit > 100 {
-		limit = 100 // Max limit
+		limit = 100
 	}
 
 	var userId string
 	if req.UserId != "" {
-		user, err := s.userClient.GetUser(ctx, req.UserId)
-		if err != nil {
-			return &pb.ListPostsResponse{
-				Success: false,
-			}, nil
+		if strings.HasPrefix(req.UserId, "user_") {
+			// Clerk ID → fetch actual DB ID
+			user, err := s.userClient.GetUser(ctx, req.UserId)
+			if err != nil {
+				return &pb.ListPostsResponse{
+					Success: false,
+				}, nil
+			}
+			userId = user.GetId()
+		} else {
+			// Already a DB ID → use as is
+			userId = req.UserId
 		}
-		userId = user.GetId()
 	}
 
 	posts, total, err := s.repo.List(page, limit, req.Category, userId)
@@ -536,14 +582,22 @@ func (s *PostServiceServer) GetPostsByUser(ctx context.Context, req *pb.GetPosts
 		limit = 100
 	}
 
-	user, err := s.userClient.GetUser(ctx, req.UserId)
-	if err != nil {
-		return &pb.ListPostsResponse{
-			Success: false,
-		}, nil
+	var mongoUserId string
+	if strings.HasPrefix(req.UserId, "user_") {
+		// Clerk ID → fetch actual DB ID
+		user, err := s.userClient.GetUser(ctx, req.UserId)
+		if err != nil {
+			return &pb.ListPostsResponse{
+				Success: false,
+			}, nil
+		}
+		mongoUserId = user.GetId()
+	} else {
+		// Already a DB ID → use as is
+		mongoUserId = req.UserId
 	}
 
-	posts, total, err := s.repo.GetByUser(user.GetId(), page, limit)
+	posts, total, err := s.repo.GetByUser(mongoUserId, page, limit)
 	if err != nil {
 		return &pb.ListPostsResponse{
 			Success: false,
@@ -626,14 +680,22 @@ func (s *PostServiceServer) DeletePosts(ctx context.Context, req *pb.DeletePosts
 	if len(req.UserIds) > 0 {
 		mongoUserIds = make([]string, 0, len(req.UserIds))
 		for _, userId := range req.UserIds {
-			user, err := s.userClient.GetUser(ctx, userId)
-			if err != nil {
-				return &pb.DeletePostResponse{
-					Success: false,
-					Message: fmt.Sprintf("Failed to get user details for user %s: %v", userId, err),
-				}, nil
+			var mongoId string
+			if strings.HasPrefix(userId, "user_") {
+				// Clerk ID → fetch actual DB ID
+				user, err := s.userClient.GetUser(ctx, userId)
+				if err != nil {
+					return &pb.DeletePostResponse{
+						Success: false,
+						Message: fmt.Sprintf("Failed to get user details for user %s: %v", userId, err),
+					}, nil
+				}
+				mongoId = user.GetId()
+			} else {
+				// Already a DB ID → use as is
+				mongoId = userId
 			}
-			mongoUserIds = append(mongoUserIds, user.GetId())
+			mongoUserIds = append(mongoUserIds, mongoId)
 		}
 	}
 

@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -77,21 +78,30 @@ func (c *UserServiceClient) GetLocalUser(ctx context.Context, userID string) (*p
 	return resp.User, nil
 }
 
+func (c *UserServiceClient) ResolveUser(ctx context.Context, userID string) (*pb.User, error) {
+	if strings.HasPrefix(userID, "user_") {
+		// Clerk ID → fetch actual DB ID
+		return c.GetUser(ctx, userID)
+	}
+	// Already a DB ID → use as is
+	return c.GetLocalUser(ctx, userID)
+}
+
 func (c *UserServiceClient) ValidateUser(ctx context.Context, userID string) (bool, error) {
 	req := &pb.GetUserRequest{
 		UserId: userID,
 	}
 
-	resp, err := c.client.GetUser(ctx, req)
+	user, err := c.ResolveUser(ctx, req.UserId)
 	if err != nil {
 		return false, fmt.Errorf("failed to call GetUser: %w", err)
 	}
 
-	if !resp.Success {
-		return false, fmt.Errorf("user not found or error: %s", resp.Message)
+	if user == nil {
+		return false, fmt.Errorf("user not found")
 	}
 
-	return resp.Success, nil
+	return true, nil
 }
 
 // Close closes the client connection
