@@ -58,6 +58,24 @@ namespace CommentService.Services
             _eventServiceClient = new Events.EventService.EventServiceClient(eventChannel);
         }
 
+        public async Task<User?> ResolveUserAsync(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                _logger.LogWarning("ResolveUserAsync called with empty userId");
+                return null;
+            }
+
+            // Clerk ID → fetch actual DB ID
+            if (userId.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
+            {
+                return await GetUserAsync(userId);
+            }
+
+            // Already a DB ID → use as is
+            return await GetLocalUserAsync(userId);
+        }
+
         public async Task<bool> ValidateUserAsync(string userId)
         {
             var cacheKey = $"user_validation:{userId}";
@@ -78,10 +96,8 @@ namespace CommentService.Services
 
             try
             {
-                var request = new GetUserRequest { UserId = userId };
-                var response = await _userServiceClient.GetUserAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
-
-                var isValid = response.Success;
+                var user = await ResolveUserAsync(userId);
+                var isValid = user != null;
                 await SetCacheAsync(cacheKey, isValid);
 
                 _logger.LogDebug("User validation for {UserId}: {IsValid}", userId, isValid);
@@ -95,47 +111,6 @@ namespace CommentService.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error validating user {UserId}", userId);
-                return false;
-            }
-        }
-
-        public async Task<bool> ValidatePostAsync(uint postId)
-        {
-            var cacheKey = $"post_validation:{postId}";
-
-            try
-            {
-                var cachedResult = await _cache.GetStringAsync(cacheKey);
-                if (!string.IsNullOrEmpty(cachedResult))
-                {
-                    _logger.LogDebug("Cache hit for post validation {PostId}", postId);
-                    return JsonSerializer.Deserialize<bool>(cachedResult);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to get post validation from cache for post {PostId}", postId);
-            }
-
-            try
-            {
-                var request = new GetPostRequest { PostId = postId };
-                var response = await _postServiceClient.GetPostAsync(request, deadline: DateTime.UtcNow.AddSeconds(5));
-
-                var isValid = response.Success;
-                await SetCacheAsync(cacheKey, isValid);
-
-                _logger.LogDebug("Post validation for {PostId}: {IsValid}", postId, isValid);
-                return isValid;
-            }
-            catch (RpcException ex)
-            {
-                _logger.LogError(ex, "gRPC error validating post {PostId}: {StatusCode}", postId, ex.StatusCode);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error validating post {PostId}", postId);
                 return false;
             }
         }
@@ -225,6 +200,46 @@ namespace CommentService.Services
             {
                 _logger.LogError(ex, "Error getting user {UserId}", userId);
                 return null;
+            }
+        }
+
+        public async Task<bool> ValidatePostAsync(uint postId)
+        {
+            var cacheKey = $"post_validation:{postId}";
+
+            try
+            {
+                var cachedResult = await _cache.GetStringAsync(cacheKey);
+                if (!string.IsNullOrEmpty(cachedResult))
+                {
+                    _logger.LogDebug("Cache hit for post validation {PostId}", postId);
+                    return JsonSerializer.Deserialize<bool>(cachedResult);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get post validation from cache for post {PostId}", postId);
+            }
+
+            try
+            {
+                var post = await GetPostAsync(postId);
+                var isValid = post != null;
+
+                await SetCacheAsync(cacheKey, isValid);
+
+                _logger.LogDebug("Post validation for {PostId}: {IsValid}", postId, isValid);
+                return isValid;
+            }
+            catch (RpcException ex)
+            {
+                _logger.LogError(ex, "gRPC error validating post {PostId}: {StatusCode}", postId, ex.StatusCode);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating post {PostId}", postId);
+                return false;
             }
         }
 

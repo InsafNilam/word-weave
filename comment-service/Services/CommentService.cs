@@ -2,6 +2,7 @@ using CommentService.Grpc;
 using CommentService.Models;
 using CommentService.Repositories;
 using CommentService.Services;
+using CommentService.Users;
 using Grpc.Core;
 using Serilog;
 
@@ -57,8 +58,9 @@ namespace CommentService.GrpcServices
                     };
                 }
 
-                var user = await _externalServices.GetUserAsync(request.UserId);
-                if (user == null)
+                // Validate user exists
+                var isValidUser = await _externalServices.ValidateUserAsync(request.UserId);
+                if (!isValidUser)
                 {
                     return new CommentResponse
                     {
@@ -78,10 +80,30 @@ namespace CommentService.GrpcServices
                     };
                 }
 
+                string userId = string.Empty;
+                if (request.UserId.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
+                {
+                    User? user = await _externalServices.GetUserAsync(request.UserId);
+                    userId = user != null ? user.Id : string.Empty;
+                }
+                else
+                {
+                    userId = request.UserId;
+                }
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return new CommentResponse
+                    {
+                        Success = false,
+                        Message = "Invalid or non-existent user"
+                    };
+                }
+
                 // Create comment
                 var comment = new CommentService.Models.Comment
                 {
-                    UserId = user.Id,
+                    UserId = userId,
                     PostId = request.PostId,
                     Description = request.Description.Trim()
                 };
@@ -196,8 +218,19 @@ namespace CommentService.GrpcServices
                     };
                 }
 
-                var user = await _externalServices.GetUserAsync(request.UserId);
-                if (user == null)
+                string userId = string.Empty;
+                if (request.UserId.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Clerk ID → fetch actual DB ID
+                    User? user = await _externalServices.GetUserAsync(request.UserId);
+                    userId = user?.Id ?? string.Empty;
+                }
+                else
+                {
+                    userId = request.UserId;
+                }
+
+                if (string.IsNullOrWhiteSpace(userId))
                 {
                     return new GetCommentsResponse
                     {
@@ -209,7 +242,7 @@ namespace CommentService.GrpcServices
                 var page = Math.Max(1, request.Page);
                 var pageSize = Math.Min(Math.Max(1, request.PageSize), 100);
 
-                var (comments, totalCount) = await _commentRepository.GetByUserIdAsync(user.Id, page, pageSize);
+                var (comments, totalCount) = await _commentRepository.GetByUserIdAsync(userId, page, pageSize);
 
                 var response = new GetCommentsResponse
                 {
@@ -255,22 +288,33 @@ namespace CommentService.GrpcServices
                     };
                 }
 
-                var user = await _externalServices.GetUserAsync(request.UserId);
-                if (user == null)
-                {
-                    return new CommentResponse
-                    {
-                        Success = false,
-                        Message = "Invalid or non-existent user"
-                    };
-                }
-
                 if (string.IsNullOrWhiteSpace(request.Description) || request.Description.Length > 1000)
                 {
                     return new CommentResponse
                     {
                         Success = false,
                         Message = "Description is required and must be less than 1000 characters"
+                    };
+                }
+
+                string userId = string.Empty;
+                if (request.UserId.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Clerk ID → fetch actual DB ID
+                    User? user = await _externalServices.GetUserAsync(request.UserId);
+                    userId = user != null ? user.Id : string.Empty;
+                }
+                else
+                {
+                    userId = request.UserId;
+                }
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return new CommentResponse
+                    {
+                        Success = false,
+                        Message = "Invalid or non-existent user"
                     };
                 }
 
@@ -286,7 +330,7 @@ namespace CommentService.GrpcServices
                 }
 
                 // Verify user owns the comment
-                if (existingComment.UserId != user.Id)
+                if (existingComment.UserId != userId)
                 {
                     return new CommentResponse
                     {
@@ -346,8 +390,19 @@ namespace CommentService.GrpcServices
                     };
                 }
 
-                var user = await _externalServices.GetUserAsync(request.UserId);
-                if (user == null)
+                string userId = string.Empty;
+                if (request.UserId.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Clerk ID → fetch actual DB ID
+                    User? user = await _externalServices.GetUserAsync(request.UserId);
+                    userId = user != null ? user.Id : string.Empty;
+                }
+                else
+                {
+                    userId = request.UserId;
+                }
+
+                if (string.IsNullOrWhiteSpace(userId))
                 {
                     return new DeleteCommentResponse
                     {
@@ -368,7 +423,7 @@ namespace CommentService.GrpcServices
                 }
 
                 // Verify user owns the comment
-                if (existingComment.UserId != user.Id)
+                if (existingComment.UserId != userId)
                 {
                     return new DeleteCommentResponse
                     {
@@ -452,18 +507,24 @@ namespace CommentService.GrpcServices
                 var mongoUserIds = new List<string>();
                 if (request.UserIds != null && request.UserIds.Count > 0)
                 {
-                    foreach (var userId in request.UserIds)
+                    foreach (var id in request.UserIds)
                     {
-                        var user = await _externalServices.GetUserAsync(userId);
-                        if (user == null)
+                        string resolvedId = string.Empty;
+
+                        if (id.StartsWith("user_", StringComparison.OrdinalIgnoreCase))
                         {
-                            return new DeleteCommentResponse
-                            {
-                                Success = false,
-                                Message = $"User {userId} not found"
-                            };
+                            var user = await _externalServices.GetUserAsync(id);
+                            resolvedId = user?.Id ?? string.Empty;
                         }
-                        mongoUserIds.Add(user.Id);
+                        else
+                        {
+                            resolvedId = id;
+                        }
+
+                        if (!string.IsNullOrEmpty(resolvedId))
+                        {
+                            mongoUserIds.Add(resolvedId);
+                        }
                     }
                 }
 
