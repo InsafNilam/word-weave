@@ -267,11 +267,11 @@ namespace CommentService.Repositories
 
         public async Task<bool> DeleteMultipleAsync(IEnumerable<string> userIds, IEnumerable<uint> postIds)
         {
-            if (userIds == null || !userIds.Any() || postIds == null || !postIds.Any())
+            if ((userIds == null || !userIds.Any()) && (postIds == null || !postIds.Any()))
                 return false;
 
             var commentsToDelete = await _context.Comments
-                .Where(c => userIds.Contains(c.UserId) || postIds.Contains(c.PostId))
+                .Where(c => (userIds ?? Enumerable.Empty<string>()).Contains(c.UserId) || (postIds ?? Enumerable.Empty<uint>()).Contains(c.PostId))
                 .ToListAsync();
 
             if (!commentsToDelete.Any())
@@ -289,7 +289,7 @@ namespace CommentService.Repositories
             }
 
             _logger.LogInformation("Deleted multiple comments for users {UserIds} and posts {PostIds}",
-                string.Join(", ", userIds), string.Join(", ", postIds));
+                string.Join(", ", userIds ?? Enumerable.Empty<string>()), string.Join(", ", postIds ?? Enumerable.Empty<uint>()));
             return true;
         }
 
