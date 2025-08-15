@@ -52,7 +52,7 @@ module EventService
         end
       end
 
-      def get_comments_by_post(post_id, page: 1, page_size: 10)
+      def get_comments_by_post(post_id:, page: 1, page_size: 10)
         return nil if post_id.nil? || post_id == 0
 
         request = Comment::GetCommentsByPostRequest.new(
@@ -74,7 +74,7 @@ module EventService
         end
       end
 
-      def get_comments_by_user(user_id, page: 1, page_size: 10)
+      def get_comments_by_user(user_id:, page: 1, page_size: 10)
         return nil if user_id.nil? || user_id.empty?
 
         request = Comment::GetCommentsByUserRequest.new(
@@ -140,17 +140,22 @@ module EventService
         end
       end
 
-      def delete_comments(user_ids, post_ids)
-        return false if (user_ids.nil? || user_ids.empty?) && (post_ids.nil? || post_ids.empty?)
+      def delete_comments(user_ids:, post_ids:)
+        # Ensure arrays are never nil - convert nil to empty arrays
+        user_ids = user_ids || []
+        post_ids = post_ids || []
+        
+        return false if user_ids.empty? && post_ids.empty?
 
         request = Comment::DeleteCommentsRequest.new(
-          user_ids: user_ids || [],
-          post_ids: post_ids || []
+          user_ids: user_ids,
+          post_ids: post_ids
         )
 
         begin
           response = @stub.delete_comments(request, call_options)
-          logger.debug("Deleted #{user_ids.size} comments for users: #{user_ids.join(", ")} on posts: #{post_ids.join(", ")}")
+          # Safe to call .size and .join now since we guaranteed arrays above
+          logger.debug("Deleted comments for users: #{user_ids.join(", ")} on posts: #{post_ids.join(", ")}")
           response.success
         rescue GRPC::BadStatus => e
           handle_grpc_error(e, "DeleteComments")

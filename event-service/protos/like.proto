@@ -18,7 +18,7 @@ service LikesService {
 // Like Post
 message LikePostRequest {
   string user_id = 1;
-  string post_id = 2;
+  uint32 post_id = 2;
 }
 
 message LikePostResponse {
@@ -30,7 +30,7 @@ message LikePostResponse {
 // Unlike Post
 message UnlikePostRequest {
   string user_id = 1;
-  string post_id = 2;
+  uint32 post_id = 2;
 }
 
 message UnlikePostResponse {
@@ -41,7 +41,7 @@ message UnlikePostResponse {
 // Unlike Posts
 message UnlikePostsRequest {
   repeated string user_ids = 1;
-  repeated string post_ids = 2;
+  repeated uint32 post_ids = 2;
 }
 
 // Get User Likes
@@ -57,13 +57,13 @@ message GetUserLikesResponse {
 }
 
 message UserLike {
-  string post_id = 1;
+  uint32 post_id = 1;
   google.protobuf.Timestamp liked_at = 2;
 }
 
 // Get Post Likes
 message GetPostLikesRequest {
-  string post_id = 1;
+  uint32 post_id = 1;
   int32 page = 2;
   int32 limit = 3;
 }
@@ -81,7 +81,7 @@ message PostLike {
 // Check if Post is Liked
 message IsPostLikedRequest {
   string user_id = 1;
-  string post_id = 2;
+  uint32 post_id = 2;
 }
 
 message IsPostLikedResponse {
