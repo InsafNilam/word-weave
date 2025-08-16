@@ -401,6 +401,9 @@ export const userService = {
   },
 
   async DeleteUser(call, callback) {
+    let clerkDeletedUser = null;
+    let localDeletedUser = null;
+
     try {
       const { user_id } = call.request;
 
@@ -408,16 +411,34 @@ export const userService = {
         throw new Error("User ID is required");
       }
 
-      // Fetch local DB user
-      const localDeletedUser = await User.findOne({
-        clerk_user_id: user_id,
-      }).lean();
+      if (user_id.startsWith("user_")) {
+        // Delete from Clerk
+        try {
+          clerkDeletedUser = await clerkClient.users.deleteUser(user_id);
+        } catch (err) {
+          console.warn(`Clerk user not found: ${user_id}`);
+        }
 
-      let clerkDeletedUser = null;
-      try {
-        clerkDeletedUser = await clerkClient.users.deleteUser(user_id);
-      } catch (err) {
-        console.warn(`Clerk user not found: ${user_id}`);
+        // Fetch from local DB by clerk_user_id
+        localDeletedUser = await User.findOne({
+          clerk_user_id: user_id,
+        }).lean();
+      } else {
+        // Fetch from local DB by ObjectId
+        localDeletedUser = await User.findById(user_id).lean();
+
+        // If local user has a Clerk ID, delete in Clerk too
+        if (localDeletedUser?.clerk_user_id) {
+          try {
+            clerkDeletedUser = await clerkClient.users.deleteUser(
+              localDeletedUser.clerk_user_id
+            );
+          } catch (err) {
+            console.warn(
+              `Clerk user not found: ${localDeletedUser.clerk_user_id}`
+            );
+          }
+        }
       }
 
       if (!clerkDeletedUser && !localDeletedUser) {
@@ -426,34 +447,20 @@ export const userService = {
         );
       }
 
-      const deletedUser = {
+      // Delete from local DB if present
+      if (localDeletedUser?._id) {
+        await User.deleteOne({ _id: localDeletedUser._id });
+      }
+
+      // Build deletedUser payload safely
+      const deletedUserPayload = {
         ...(clerkDeletedUser || {}),
-        _id: localDeletedUser._id || null,
-        bio: localDeletedUser.bio || null,
+        _id: localDeletedUser?._id || null,
+        bio: localDeletedUser?.bio || null,
       };
 
-      // Publish Event
-      await eventClient.publishEvent({
-        aggregateId: deletedUser._id,
-        aggregateType: "user",
-        eventType: "user.deleted",
-        eventData: {
-          userId: localDeletedUser._id,
-          clerkId: deletedUser.id,
-          email: deletedUser.emailAddresses[0]?.emailAddress,
-          username: deletedUser.username,
-          firstName: deletedUser.firstName,
-          lastName: deletedUser.lastName,
-          deletedAt: deletedUser.deletedAt,
-        },
-        metadata: {
-          service: "user-service",
-          version: "1.0.0",
-        },
-      });
-
       callback(null, {
-        user: transformUser(deletedUser),
+        user: transformUser(deletedUserPayload),
         message: "User deleted successfully",
       });
     } catch (error) {
@@ -462,6 +469,7 @@ export const userService = {
         stack: error.stack,
         request: call.request,
       });
+
       const grpcError = new Error(`Failed to delete user: ${error.message}`);
       grpcError.code = getGrpcErrorCode(error);
 
