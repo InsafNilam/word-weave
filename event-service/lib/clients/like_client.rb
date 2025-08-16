@@ -13,7 +13,7 @@ module EventService
       end
 
       def like_post(user_id:, post_id:)
-        return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
+        return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id == 0
 
         request = Like::LikePostRequest.new(
           user_id: user_id,
@@ -34,7 +34,7 @@ module EventService
       end
 
       def unlike_post(user_id:, post_id:)
-        return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
+        return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id == 0
 
         request = Like::UnlikePostRequest.new(
           user_id: user_id,
@@ -54,16 +54,21 @@ module EventService
         end
       end
 
-      def unlike_posts(user_ids: [], post_ids: [])
-        return false if (user_ids.nil? || user_ids.empty?) && (post_ids.nil? || post_ids.empty?)
+      def unlike_posts(user_ids:, post_ids:)
+        # Ensure arrays are never nil - convert nil to empty arrays
+        user_ids = user_ids || []
+        post_ids = post_ids || []
+        
+        return false if user_ids.empty? && post_ids.empty?
 
         request = Like::UnlikePostsRequest.new(
-          user_ids: user_ids || [],
-          post_ids: post_ids || []
+          user_ids: user_ids,
+          post_ids: post_ids
         )
 
         begin
           response = @stub.unlike_posts(request, call_options)
+          # Safe to call .size now since we guaranteed arrays above
           logger.debug("Bulk unliked posts - users: #{user_ids.size}, posts: #{post_ids.size}")
           response.success
         rescue GRPC::BadStatus => e
@@ -98,7 +103,7 @@ module EventService
       end
 
       def get_post_likes(post_id, page: 1, limit: 10)
-        return nil if post_id.nil? || post_id.empty?
+        return nil if post_id.nil? || post_id == 0
 
         request = Like::GetPostLikesRequest.new(
           post_id: post_id,
@@ -120,7 +125,7 @@ module EventService
       end
 
       def is_post_liked?(user_id:, post_id:)
-        return false if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
+        return false if user_id.nil? || user_id.empty? || post_id.nil? || post_id == 0
 
         request = Like::IsPostLikedRequest.new(
           user_id: user_id,
@@ -141,7 +146,7 @@ module EventService
       end
 
       def get_likes_count(post_id)
-        return 0 if post_id.nil? || post_id.empty?
+        return 0 if post_id.nil? || post_id == 0
 
         request = Like::GetLikesCountRequest.new(post_id: post_id)
 
@@ -176,7 +181,7 @@ module EventService
 
       # Convenience methods for easier usage
       def toggle_like(user_id:, post_id:)
-        return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id.empty?
+        return nil if user_id.nil? || user_id.empty? || post_id.nil? || post_id == 0
 
         liked_response = is_post_liked?(user_id: user_id, post_id: post_id)
         return nil unless liked_response
