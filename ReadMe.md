@@ -209,6 +209,21 @@ SELECT * FROM <table_name>;
 
 ---
 
+### 🔹 How to cleanup resources if run locally:
+
+1. Rename it to `cleanup.ps1`.
+2. Open **PowerShell as Administrator**.
+3. Run:
+
+   ```powershell
+   Set-ExecutionPolicy -Scope Process Bypass
+   ./cleanup.ps1
+   ```
+
+This will clear build artifacts, caches, and dependencies across all the mentioned ecosystems.
+
+---
+
 ## Notes
 
 - All services have **independent databases**

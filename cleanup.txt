@@ -1,0 +1,51 @@
+
+# =============================
+# Multi-language Cleanup Script
+# Works on Windows (PowerShell)
+# =============================
+
+Write-Output "Starting cleanup process..."
+
+# ---- Rust ----
+Write-Output "Cleaning Rust build artifacts..."
+if (Test-Path target) { Remove-Item target -Recurse -Force }
+cargo clean 2>$null
+
+# ---- Ruby ----
+Write-Output "Cleaning Ruby gems and bundler cache..."
+if (Test-Path vendor\bundle) { Remove-Item vendor\bundle -Recurse -Force }
+bundle clean --force 2>$null
+if (Test-Path $env:USERPROFILE\.bundle) { Remove-Item $env:USERPROFILE\.bundle -Recurse -Force }
+if (Test-Path $env:USERPROFILE\.gem) { Remove-Item $env:USERPROFILE\.gem -Recurse -Force }
+
+# ---- Go ----
+Write-Output "Cleaning Go build and module cache..."
+go clean -cache -modcache -i -r 2>$null
+
+# ---- Node.js ----
+Write-Output "Cleaning Node.js dependencies and cache..."
+if (Test-Path node_modules) { Remove-Item node_modules -Recurse -Force }
+if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+if (Test-Path package-lock.json) { Remove-Item package-lock.json -Force }
+if (Test-Path yarn.lock) { Remove-Item yarn.lock -Force }
+if (Test-Path pnpm-lock.yaml) { Remove-Item pnpm-lock.yaml -Force }
+npm cache clean --force 2>$null
+
+# ---- Python ----
+Write-Output "Cleaning Python virtual environments and cache..."
+if (Test-Path venv) { Remove-Item venv -Recurse -Force }
+if (Test-Path .venv) { Remove-Item .venv -Recurse -Force }
+pip cache purge 2>$null
+
+# ---- Vite ----
+Write-Output "Cleaning Vite build output..."
+if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+
+# ---- .NET ----
+Write-Output "Cleaning .NET build artifacts and NuGet cache..."
+dotnet clean 2>$null
+if (Test-Path bin) { Remove-Item bin -Recurse -Force }
+if (Test-Path obj) { Remove-Item obj -Recurse -Force }
+dotnet nuget locals all --clear 2>$null
+
+Write-Output "Cleanup complete!"
