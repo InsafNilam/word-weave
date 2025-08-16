@@ -74,7 +74,9 @@ module EventServiceBootstrap
 
     # Start event consumer with connection management
     def start_consumer
+      puts "🚀 [#{Time.now.strftime('%H:%M:%S')}] Starting Event Consumer..."
       logger.info 'Starting Event Consumer...'
+      STDOUT.flush
       
       # Ensure initialization and setup are done
       initialize! unless @initialized
@@ -83,12 +85,120 @@ module EventServiceBootstrap
       consumer = EventService::EventConsumer.new
       setup_consumer_shutdown_handlers(consumer)
       
-      consumer.connect
-      logger.info 'Event Consumer connected successfully'
+      # Wait for RabbitMQ to be available before proceeding
+      wait_for_rabbitmq
+      
+      puts "🔌 [#{Time.now.strftime('%H:%M:%S')}] Connecting to RabbitMQ..."
+      STDOUT.flush
+      
+      # Connect with retries
+      max_retries = 5
+      retry_count = 0
+      
+      begin
+        consumer.connect
+        puts "✅ [#{Time.now.strftime('%H:%M:%S')}] Connected to RabbitMQ successfully!"
+        logger.info 'Event Consumer connected successfully'
+        STDOUT.flush
+      rescue => e
+        retry_count += 1
+        if retry_count <= max_retries
+          wait_time = retry_count * 3
+          puts "⚠️ [#{Time.now.strftime('%H:%M:%S')}] Connection attempt #{retry_count}/#{max_retries} failed. Retrying in #{wait_time}s..."
+          STDOUT.flush
+          sleep wait_time
+          retry
+        else
+          raise
+        end
+      end
+      
+      puts "🎯 [#{Time.now.strftime('%H:%M:%S')}] Setting up subscriptions..."
+      STDOUT.flush
+
+      # Subscribe to user events with timeout
+      puts "👤 [#{Time.now.strftime('%H:%M:%S')}] Setting up user service subscription..."
+      STDOUT.flush
+      
+      begin
+        Timeout::timeout(30) do
+          consumer.subscribe_to_events(
+            consumer_group: 'user_service',
+            event_types: ['user.deleted', 'user.created', 'user.updated']
+          ) do |event|
+            timestamp = Time.now.strftime('%H:%M:%S.%3N')
+            puts "👤 [#{timestamp}] User Service: #{event['event_type']} - #{event['id']}"
+            STDOUT.flush
+            
+            begin
+              consumer.send(:route_event, event)
+              puts "👤 [#{timestamp}] ✅ Processed"
+              STDOUT.flush
+            rescue => e
+              puts "👤 [#{timestamp}] ❌ Failed: #{e.message}"
+              STDOUT.flush
+              raise
+            end
+          end
+        end
+        puts "✅ [#{Time.now.strftime('%H:%M:%S')}] User service subscription ready"
+        STDOUT.flush
+      rescue Timeout::Error => e
+        puts "❌ [#{Time.now.strftime('%H:%M:%S')}] User subscription timeout: #{e.message}"
+        STDOUT.flush
+        raise
+      end
+
+      # Subscribe to post events with timeout
+      puts "📝 [#{Time.now.strftime('%H:%M:%S')}] Setting up post service subscription..."
+      STDOUT.flush
+      
+      begin
+        Timeout::timeout(30) do
+          consumer.subscribe_to_events(
+            consumer_group: 'post_service',
+            event_types: ['post.deleted', 'post.created', 'post.updated']
+          ) do |event|
+            timestamp = Time.now.strftime('%H:%M:%S.%3N')
+            puts "📝 [#{timestamp}] Post Service: #{event['event_type']} - #{event['id']}"
+            STDOUT.flush
+            
+            begin
+              consumer.send(:route_event, event)
+              puts "📝 [#{timestamp}] ✅ Processed"
+              STDOUT.flush
+            rescue => e
+              puts "📝 [#{timestamp}] ❌ Failed: #{e.message}"
+              STDOUT.flush
+              raise
+            end
+          end
+        end
+        puts "✅ [#{Time.now.strftime('%H:%M:%S')}] Post service subscription ready"
+        STDOUT.flush
+      rescue Timeout::Error => e
+        puts "❌ [#{Time.now.strftime('%H:%M:%S')}] Post subscription timeout: #{e.message}"
+        STDOUT.flush
+        raise
+      end
+      
+      puts "🎉 [#{Time.now.strftime('%H:%M:%S')}] All subscriptions ready! Starting consumption loop..."
+      STDOUT.flush
+      
+      # Small delay to ensure everything is settled
+      sleep 2
       
       consumer.start_consuming
     rescue StandardError => e
-      logger.error "Failed to start consumer: #{e.message}"
+      error_msg = "Failed to start consumer: #{e.message}"
+      timestamp = Time.now.strftime('%H:%M:%S')
+      puts "❌ [#{timestamp}] #{error_msg}"
+      puts "❌ [#{timestamp}] Backtrace: #{e.backtrace.first(5).join('\n')}"
+      STDOUT.flush
+      
+      logger.error error_msg
+      logger.error e.backtrace.join("\n")
+      
       consumer&.disconnect
       raise ServiceError, "Consumer startup failed: #{e.message}"
     end
@@ -281,6 +391,36 @@ module EventServiceBootstrap
     end
 
     private
+
+    def wait_for_rabbitmq
+      puts "🕐 [#{Time.now.strftime('%H:%M:%S')}] Waiting for RabbitMQ to be available..."
+      STDOUT.flush
+      
+      max_attempts = 30
+      attempt = 0
+      
+      while attempt < max_attempts
+        begin
+          # Try a simple TCP connection to RabbitMQ
+          require 'socket'
+          TCPSocket.new('rabbitmq', 5672).close
+          puts "✅ [#{Time.now.strftime('%H:%M:%S')}] RabbitMQ is available"
+          STDOUT.flush
+          return
+        rescue => e
+          attempt += 1
+          if attempt >= max_attempts
+            puts "❌ [#{Time.now.strftime('%H:%M:%S')}] RabbitMQ not available after #{max_attempts} attempts"
+            STDOUT.flush
+            raise "RabbitMQ not available: #{e.message}"
+          end
+          
+          puts "⏳ [#{Time.now.strftime('%H:%M:%S')}] Attempt #{attempt}/#{max_attempts} - RabbitMQ not ready, waiting..."
+          STDOUT.flush
+          sleep 2
+        end
+      end
+    end
 
     def load_configuration
       logger.debug 'Loading configuration...'
