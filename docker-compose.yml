@@ -401,6 +401,12 @@ services:
       USER_SERVICE_PORT: 50051
       POST_SERVICE_HOST: post-service
       POST_SERVICE_PORT: 50052
+      LIKE_SERVICE_HOST: like-service
+      LIKE_SERVICE_PORT: 50053
+      COMMENT_SERVICE_HOST: comment-service
+      COMMENT_SERVICE_PORT: 50054
+      MEDIA_SERVICE_HOST: media-service
+      MEDIA_SERVICE_PORT: 50056
       REDIS_URL: redis://redis:6379
       DATABASE_URL: ${EVENT_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
@@ -446,6 +452,12 @@ services:
       USER_SERVICE_PORT: 50051
       POST_SERVICE_HOST: post-service
       POST_SERVICE_PORT: 50052
+      LIKE_SERVICE_HOST: like-service
+      LIKE_SERVICE_PORT: 50053
+      COMMENT_SERVICE_HOST: comment-service
+      COMMENT_SERVICE_PORT: 50054
+      MEDIA_SERVICE_HOST: media-service
+      MEDIA_SERVICE_PORT: 50056
       REDIS_URL: redis://redis:6379
       DATABASE_URL: ${EVENT_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
@@ -485,6 +497,12 @@ services:
       USER_SERVICE_PORT: 50051
       POST_SERVICE_HOST: post-service
       POST_SERVICE_PORT: 50052
+      LIKE_SERVICE_HOST: like-service
+      LIKE_SERVICE_PORT: 50053
+      COMMENT_SERVICE_HOST: comment-service
+      COMMENT_SERVICE_PORT: 50054
+      MEDIA_SERVICE_HOST: media-service
+      MEDIA_SERVICE_PORT: 50056
       REDIS_URL: redis://redis:6379
       DATABASE_URL: ${EVENT_DATABASE_URL}
       RABBITMQ_URL: ${RABBITMQ_URL}
