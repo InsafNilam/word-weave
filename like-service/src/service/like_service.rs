@@ -395,6 +395,7 @@ impl LikesService for LikesServiceImpl {
             req.user_ids.len(),
             req.post_ids.len()
         );
+
         let mut user_client = self.user_client.clone();
 
         if req.user_ids.is_empty() && req.post_ids.is_empty() {
@@ -461,6 +462,7 @@ impl LikesService for LikesServiceImpl {
             })),
             Err(e) => {
                 error!("Failed to unlike posts: {}", e);
+                println!("Failed to unlike posts: {}", e);
                 Err(e.into())
             }
         }

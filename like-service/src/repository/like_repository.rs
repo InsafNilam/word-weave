@@ -74,7 +74,7 @@ impl LikesRepository {
         debug!("Deleting like for user {} on post {}", user_id, post_id);
 
         let query = r#"
-            DELETE likes WHERE user_id = $user_id AND post_id = $post_id;
+            DELETE FROM likes WHERE user_id = $user_id AND post_id = $post_id;
         "#;
 
         let mut result = self
@@ -240,37 +240,70 @@ impl LikesRepository {
             ));
         }
 
-        // Build conditional parts of the query
-        let mut query = String::from("DELETE likes WHERE");
-        let mut conditions = Vec::new();
+        // Handle different scenarios with separate queries for clarity
+        let deleted_result = match (!user_ids.is_empty(), !post_ids.is_empty()) {
+            (true, true) => {
+                // Both provided - delete likes where user_id AND post_id match
+                // Use RETURN BEFORE to get the records that will be deleted
+                let query = "DELETE FROM likes WHERE user_id IN $user_ids AND post_id IN $post_ids RETURN BEFORE";
+                let mut result = self
+                    .db
+                    .query_builder(query)
+                    .bind("user_ids", user_ids.to_vec())
+                    .bind("post_ids", post_ids.to_vec())
+                    .execute()
+                    .await
+                    .map_err(LikesError::Database)?;
 
-        if !user_ids.is_empty() {
-            conditions.push("user_id IN $user_ids");
-        }
-        if !post_ids.is_empty() {
-            conditions.push("post_id IN $post_ids");
-        }
+                let deleted: Vec<Like> = result.take(0)?;
+                println!("Deleted likes (both criteria): {:?}", deleted);
+                deleted
+            }
+            (true, false) => {
+                // Only user_ids provided - delete all likes by these users
+                let query = "DELETE FROM likes WHERE user_id IN $user_ids RETURN BEFORE";
+                let mut result = self
+                    .db
+                    .query_builder(query)
+                    .bind("user_ids", user_ids.to_vec())
+                    .execute()
+                    .await
+                    .map_err(LikesError::Database)?;
 
-        // Join conditions with AND
-        query.push_str(&format!(" {}", conditions.join(" AND ")));
-        query.push(';');
+                let deleted: Vec<Like> = result.take(0)?;
+                println!("Deleted likes (user criteria): {:?}", deleted);
+                deleted
+            }
+            (false, true) => {
+                // Only post_ids provided - delete all likes on these posts
+                let query = "DELETE FROM likes WHERE post_id IN $post_ids RETURN BEFORE";
+                let mut result = self
+                    .db
+                    .query_builder(query)
+                    .bind("post_ids", post_ids.to_vec())
+                    .execute()
+                    .await
+                    .map_err(LikesError::Database)?;
 
-        let mut query_builder = self.db.query_builder(&query);
+                let deleted: Vec<Like> = result.take(0)?;
+                println!("Deleted likes (post criteria): {:?}", deleted);
+                deleted
+            }
+            (false, false) => {
+                return Err(LikesError::InvalidInput(
+                    "At least one of user_ids or post_ids must be provided".to_string(),
+                ));
+            }
+        };
 
-        if !user_ids.is_empty() {
-            query_builder = query_builder.bind("user_ids", user_ids.to_vec());
-        }
-        if !post_ids.is_empty() {
-            query_builder = query_builder.bind("post_ids", post_ids.to_vec());
-        }
+        let success = !deleted_result.is_empty();
+        println!(
+            "Delete operation success: {}, deleted {} records",
+            success,
+            deleted_result.len()
+        );
 
-        let mut result = query_builder
-            .execute()
-            .await
-            .map_err(LikesError::Database)?;
-
-        let deleted: Vec<Like> = result.take(0)?;
-        Ok(!deleted.is_empty())
+        Ok(success)
     }
 
     pub async fn health_check(&self) -> Result<bool> {
