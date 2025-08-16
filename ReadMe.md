@@ -1,4 +1,3 @@
-````markdown
 # Polyglot Microservices Architecture with Event-Driven Design & RabbitMQ (WordWeave)
 
 ## Overview
@@ -62,8 +61,6 @@ MONGO_URI=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@
 ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
 EVENT_SERVICE_HOST=${EVENT_SERVICE_ADDR}
 ```
-````
-
 ---
 
 ## Running the System
@@ -234,7 +231,5 @@ MIT License
 ## Contact
 
 Open an issue or contact the maintainer for questions.
-
-```
 
 ```
