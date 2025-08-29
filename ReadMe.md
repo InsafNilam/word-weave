@@ -244,6 +244,7 @@ MIT License
 ---
 
 ## Contact
+insafnilam.2000@gmail.com
 
 Open an issue or contact the maintainer for questions.
 
